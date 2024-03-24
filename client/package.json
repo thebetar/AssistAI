@@ -1,0 +1,22 @@
+{
+	"name": "client",
+	"version": "1.0.0",
+	"description": "",
+	"main": "main.js",
+	"scripts": {
+		"start": "electron ."
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"@langchain/community": "^0.3.7",
+		"@langchain/core": "^0.3.13",
+		"@langchain/ollama": "^0.1.0",
+		"@langchain/openai": "^0.3.11",
+		"electron": "^33.0.2",
+		"faiss-node": "^0.5.1",
+		"langchain": "^0.3.3",
+		"marked": "^14.1.3"
+	}
+}

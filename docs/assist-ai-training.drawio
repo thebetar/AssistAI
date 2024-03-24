@@ -1,0 +1,58 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" version="25.0.3">
+  <diagram name="Page-1" id="2YogfRRGDqNQmtEMngXT">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="fxETAePPDEd--9lRW0F3-1" value="" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;imageAspect=0;aspect=fixed;image=https://cdn1.iconfinder.com/data/icons/unicons-line-vol-1/24/brain-128.png" vertex="1" parent="1">
+          <mxGeometry x="80" y="240" width="118" height="118" as="geometry" />
+        </mxCell>
+        <mxCell id="fxETAePPDEd--9lRW0F3-3" value="" style="verticalLabelPosition=bottom;html=1;verticalAlign=top;align=center;strokeColor=none;fillColor=#6f6fcf;shape=mxgraph.azure.file;pointerEvents=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="259" width="77.5" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="fxETAePPDEd--9lRW0F3-4" value="Step 1: Select chat model" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="74" y="368" width="136" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="fxETAePPDEd--9lRW0F3-6" value="" style="whiteSpace=wrap;html=1;shape=mxgraph.basic.oval_callout;strokeWidth=8;strokeColor=#6f6fcf;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="280" y="249" width="120" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="fxETAePPDEd--9lRW0F3-7" value="Step 2: Write prompt template" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="274" y="368" width="136" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="fxETAePPDEd--9lRW0F3-8" value="Step 3: Load documents" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="474" y="368" width="136" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="fxETAePPDEd--9lRW0F3-9" value="" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;imageAspect=0;aspect=fixed;image=https://cdn1.iconfinder.com/data/icons/unicons-line-vol-1/24/brain-128.png" vertex="1" parent="1">
+          <mxGeometry x="80" y="430" width="118" height="118" as="geometry" />
+        </mxCell>
+        <mxCell id="fxETAePPDEd--9lRW0F3-10" value="Step 5: Select embedding model" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="64" y="558" width="146" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="fxETAePPDEd--9lRW0F3-14" value="" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;imageAspect=0;aspect=fixed;image=https://cdn1.iconfinder.com/data/icons/unicons-line-vol-6/24/vector-square-128.png" vertex="1" parent="1">
+          <mxGeometry x="280.25" y="430" width="118" height="118" as="geometry" />
+        </mxCell>
+        <mxCell id="fxETAePPDEd--9lRW0F3-15" value="Step 6: Vectorise text chunks" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="262.25" y="558" width="146" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="fxETAePPDEd--9lRW0F3-16" value="" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;strokeColor=#6f6fcf;strokeWidth=8;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="498.25" y="430" width="80" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="fxETAePPDEd--9lRW0F3-17" value="Step 7: Store vectorised chunks" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="465.25" y="554" width="146" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="fxETAePPDEd--9lRW0F3-24" value="" style="shape=image;editableCssRules=.*;verticalLabelPosition=bottom;labelBackgroundColor=default;verticalAlign=top;aspect=fixed;imageAspect=0;image=data:image/svg+xml,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9Ii0wLjUgLTAuNSAyNy45NDcgMjgiIGhlaWdodD0iMjgiIHdpZHRoPSIyNy45NDciPiYjeGE7CSAgPHN0eWxlIHR5cGU9InRleHQvY3NzIj4uc3QwIHsgc3RvcC1jb2xvcjogcmdiKDExMSwgMTExLCAyMDcpOyB9IC5zdDEgeyBzdG9wLWNvbG9yOiByZ2IoMTExLCAxMTEsIDIwNyk7IH0gPC9zdHlsZT4mI3hhOwk8ZGVmcz4mI3hhOwkJPGxpbmVhckdyYWRpZW50IGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB5Mj0iMjUuMjY5IiB4Mj0iMjMuNDUiIHkxPSIzLjQ3NCIgeDE9IjIuMDM0IiBpZD0iQSI+JiN4YTsJCQk8c3RvcCBjbGFzcz0ic3QwIi8+JiN4YTsJCQk8c3RvcCBjbGFzcz0ic3QxIiBvZmZzZXQ9IjEiLz4mI3hhOwkJPC9saW5lYXJHcmFkaWVudD4mI3hhOwk8L2RlZnM+JiN4YTsJPHBhdGggZmlsbD0idXJsKCNBKSIgZD0iTTEyLjE4OSAyMC45OTJjLjE0My0uMTQ0LjMxMy0uMjU3LjUwMi0uMzMycy4zOS0uMTExLjU5Mi0uMTA1Yy40MzggMCAuNzY3LjIwMS45ODUuNjAyLjI5LjI5Mi40MzguNjM5LjQzOCAxLjA0cy0uMTQ3Ljc0Ny0uNDM3IDEuMDRsLTIuMDgxIDIuMDIzYy0uNzEzLjcxOC0xLjU3IDEuMjc3LTIuNTE1IDEuNjRhNi44NCA2Ljg0IDAgMCAxLTIuNzkuNjAyYy0uOTYyLS4wMDMtMS45MTItLjIwOC0yLjc5LS42MDItLjg3NS0uMzY0LTEuNjc2LS45MS0yLjQwNi0xLjY0LS43MDktLjY5OS0xLjI2Ny0xLjUzNy0xLjY0LTIuNDZhNy40NSA3LjQ1IDAgMCAxLS41NDgtMi43OWMwLS45NDguMTgyLTEuODc4LjU0OC0yLjc4OXMuOTEtMS43MzMgMS42NC0yLjQ2MWw0LjE1Ni00LjEwMmMuNzMtLjczIDEuNTUtMS4yNzcgMi40Ni0xLjY0MWE3LjI1IDcuMjUgMCAwIDEgMi44NDQtLjZjLjk0OCAwIDEuODc4LjIgMi43OS42LjkxMi4zNjYgMS43MTUuOTEyIDIuNDA2IDEuNjQxYTEuNDIgMS40MiAwIDAgMSAuNDM4IDEuMDRjMCAuNDAxLS4xNDUuNzQ3LS40MzcgMS4wMzhhMS40MiAxLjQyIDAgMCAxLTEuMDM5LjQzOCAxLjQyIDEuNDIgMCAwIDEtMS4wMzgtLjQzN2MtLjg0LS45MS0xLjg2LTEuMzY1LTMuMDYyLTEuMzY1cy0yLjI0NC40NTUtMy4xMTggMS4zNjVsLTQuMTUzIDQuMTAyYy0uOTEuODQtMS4zNjUgMS44Ni0xLjM2NSAzLjA2M3MuNDU1IDIuMjYxIDEuMzY1IDMuMTczYy44NC44NzUgMS44NiAxLjMxMyAzLjA2MyAxLjMxM3MyLjI0NC0uNDM3IDMuMTE5LTEuMzEybDIuMDc0LTIuMDgxem0xMy4wMTctMTkuMjVjLjcyOC42OTMgMS4yNzYgMS40OTUgMS42NCAyLjQwNmE2Ljg0IDYuODQgMCAwIDEgLjYwMiAyLjc5YzAgLjk0OS0uMjAxIDEuODc4LS42MDIgMi43OS0uMzY0Ljg3NS0uOTEgMS42NzctMS42NCAyLjQwNmwtNC4xMDIgNC4xYy0uNzY3Ljc2Ny0xLjYwNSAxLjMzLTIuNTE3IDEuNjk4LS45MDQuMzYzLTEuODY4LjU0OC0yLjg0Mi41NDZhNy40NSA3LjQ1IDAgMCAxLTIuNzktLjU0OGMtLjkwMS0uMzgzLTEuNzA0LS45NjItMi4zNTItMS42OTZhMS4zNiAxLjM2IDAgMCAxLS40MzctLjk4M2MwLS40MDIuMTQ1LS43NDcuNDM4LTEuMDRhMS4zNiAxLjM2IDAgMCAxIC45ODUtLjQzNyAxLjQyIDEuNDIgMCAwIDEgMS4wMzguNDM4IDMuODUgMy44NSAwIDAgMCAxLjQyMy45ODUgNC4zOSA0LjM5IDAgMCAwIDMuMzM2IDBjLjU0OC0uMjE5IDEuMDQtLjU0OCAxLjQ3Ny0uOTg1bDQuMTU2LTQuMTU2Yy44NzUtLjgzOCAxLjMxMy0xLjg1OSAxLjMxMy0zLjA2M3MtLjQzNy0yLjI1OS0xLjMxMi0zLjE3MWMtLjg0LS44NzUtMS44Ni0xLjMxMi0zLjA2Mi0xLjMxMnMtMi4yNjEuNDM4LTMuMTczIDEuMzEzbC0yLjA3NSAyLjA3N2ExLjQyIDEuNDIgMCAwIDEtMS4wMzkuNDM4IDEuNDIgMS40MiAwIDAgMS0xLjA0LS40MzcgMS40MiAxLjQyIDAgMCAxLS40MzctMS4wNCAxLjQyIDEuNDIgMCAwIDEgLjQzOC0xLjAzOGwyLjA3OS0yLjA4MWMuNzI4LS43MjggMS41NDktMS4yNzYgMi40Ni0xLjY0YTcuMjUgNy4yNSAwIDAgMSAyLjg0Mi0uNmMuOTQ4IDAgMS44NzguMjAxIDIuNzkuNjAyLjkxLjM2NCAxLjcxMy45MSAyLjQwNiAxLjY0eiIvPiYjeGE7PC9zdmc+;" vertex="1" parent="1">
+          <mxGeometry x="698.25" y="440" width="78" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="fxETAePPDEd--9lRW0F3-25" value="Step 8: Create retrieval chain" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="664" y="554" width="146" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="fxETAePPDEd--9lRW0F3-32" value="" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;fillColor=#6f6fcf;strokeColor=none;shape=mxgraph.alibaba_cloud.ocr_optical_character_recognition;" vertex="1" parent="1">
+          <mxGeometry x="697.25" y="263.7" width="80" height="80.6" as="geometry" />
+        </mxCell>
+        <mxCell id="fxETAePPDEd--9lRW0F3-33" value="Step 4: S&lt;span style=&quot;background-color: initial;&quot;&gt;plit documents&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="674" y="368" width="136" height="42" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

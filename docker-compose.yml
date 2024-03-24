@@ -1,0 +1,12 @@
+version: '3.9'
+
+services:
+    assist-ai:
+        build: .
+        container_name: assist-ai
+        volumes:
+            - ./src/data:/app/data
+        ports:
+            - '12345:12345'
+        environment:
+            - OLLAMA_URL=http://host.docker.internal:11434

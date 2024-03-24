@@ -1,0 +1,40 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" version="26.0.5">
+  <diagram name="Page-1" id="ccCTMHh4CwFcRgM62GV4">
+    <mxGraphModel dx="1195" dy="643" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="EnZ7MOf_cU_5Bz3SQRwK-4" value="Step 1: Invoke model" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="72" y="368" width="136" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="EnZ7MOf_cU_5Bz3SQRwK-5" value="" style="whiteSpace=wrap;html=1;shape=mxgraph.basic.oval_callout;strokeWidth=8;strokeColor=#6f6fcf;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="82" y="244.3" width="120" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="EnZ7MOf_cU_5Bz3SQRwK-6" value="Step 2: Vectorise input" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="274" y="368" width="136" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="EnZ7MOf_cU_5Bz3SQRwK-7" value="Step 3: Match input to vectorised chunks" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="459" y="368" width="166" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="EnZ7MOf_cU_5Bz3SQRwK-8" value="" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;imageAspect=0;aspect=fixed;image=https://cdn1.iconfinder.com/data/icons/unicons-line-vol-1/24/brain-128.png" vertex="1" parent="1">
+          <mxGeometry x="483" y="235.3" width="118" height="118" as="geometry" />
+        </mxCell>
+        <mxCell id="EnZ7MOf_cU_5Bz3SQRwK-9" value="Step 4: Inject text chunks as context" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="186" y="568" width="146" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="EnZ7MOf_cU_5Bz3SQRwK-10" value="" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;imageAspect=0;aspect=fixed;image=https://cdn1.iconfinder.com/data/icons/unicons-line-vol-6/24/vector-square-128.png" vertex="1" parent="1">
+          <mxGeometry x="280.25" y="235.3" width="119" height="118" as="geometry" />
+        </mxCell>
+        <mxCell id="EnZ7MOf_cU_5Bz3SQRwK-11" value="Step 5: Generate response" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="378.25" y="568" width="146" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="EnZ7MOf_cU_5Bz3SQRwK-18" value="" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;imageAspect=0;aspect=fixed;image=https://cdn1.iconfinder.com/data/icons/unicons-line-vol-1/24/brain-128.png" vertex="1" parent="1">
+          <mxGeometry x="392.25" y="440" width="118" height="118" as="geometry" />
+        </mxCell>
+        <mxCell id="EnZ7MOf_cU_5Bz3SQRwK-19" value="" style="verticalLabelPosition=bottom;html=1;verticalAlign=top;align=center;strokeColor=none;fillColor=#6f6fcf;shape=mxgraph.azure.file;pointerEvents=1;" vertex="1" parent="1">
+          <mxGeometry x="220.25" y="452" width="77.5" height="90" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
