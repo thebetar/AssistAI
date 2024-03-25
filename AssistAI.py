@@ -1,15 +1,18 @@
-import os
 import sys
+import os
 
 # The overall model
 from langchain_community.document_loaders import TextLoader
-from langchain_community.document_loaders.csv_loader import CSVLoader
-from langchain_core.output_parsers import JsonOutputParser
-from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.llms import Ollama
+
+llm = Ollama(model="tinyllama")
+
+# Imports to load files
 from langchain_community.document_loaders import DirectoryLoader
 from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain_community.vectorstores import Chroma
+
+# Imports to use vector store
+from langchain_community.vectorstores import Redis
 from langchain.chains import create_retrieval_chain
 from langchain_community.embeddings.sentence_transformer import (
     SentenceTransformerEmbeddings,
@@ -19,12 +22,12 @@ from langchain import hub
 print("Loading...")
 
 PERSIST = True
+REDIS_URL = "redis://localhost:6379"
 
 print("1: Starting the AssistAI model")
 
 # Initialise minimalist model
 llm = Ollama(model="tinyllama")
-output_parser = JsonOutputParser()
 
 print("2: Loading documents")
 
@@ -35,14 +38,7 @@ data_path = os.path.join(os.getcwd(), 'data')
 
 md_glob = '**/*.md'
 md_loader = DirectoryLoader(data_path, loader_cls=TextLoader, glob=md_glob)
-md_docs = md_loader.load()
-
-csv_glob = '**/*.csv'
-csv_loader = DirectoryLoader(data_path, loader_cls=CSVLoader, glob=csv_glob)
-csv_docs = csv_loader.load()
-
-# Combine all documents
-docs = md_docs + csv_docs
+docs = md_loader.load()
 
 print("3: Creating the prompt")
 
@@ -55,16 +51,10 @@ print("4: Creating the retrieval chain")
 combine_documents_chain = create_stuff_documents_chain(llm, retrieval_qa_chat_prompt)
 
 # Create embedding function to search for documents
-embedding_function = SentenceTransformerEmbeddings(model_name="all-MiniLM-L6-v2")
+embedding = SentenceTransformerEmbeddings(model_name="all-MiniLM-L6-v2")
 
 # Load or create vectorstore for more efficient retrieval
-if os.path.exists("persist") and PERSIST:
-    vectorstore = Chroma.from_documents(docs, embedding_function, persist_directory="persist")
-elif not os.path.exists("persist") and PERSIST:
-    os.makedirs("persist")
-    vectorstore = Chroma.from_documents(docs, embedding_function, persist_directory="persist")
-else:
-    vectorstore = Chroma.from_documents(docs, embedding_function)
+vectorstore = Redis.from_documents(documents=docs, embedding=embedding, redis_url=REDIS_URL)
 
 retriever = vectorstore.as_retriever(k=10)
 
