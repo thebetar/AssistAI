@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<script src="https://cdn.tailwindcss.com"></script>
+		<link href="./style.css" rel="stylesheet" />
+	</head>
+	<body class="bg-zinc-900 text-white px-4 py-3 flex flex-col items-center justify-center gap-y-4">
+		<h1 class="text-2xl font-semibold">AssistAI</h1>
+
+		<div class="text-sm">
+			Welcome to AssistAI! This client aims to provide a simple interface for interacting with the AssistAI
+			chatbot and connect it to your documents.
+		</div>
+
+		<div class="flex justify-between w-full max-w-[960px]">
+			<div class="flex flex-col gap-y-2 w-full max-w-[420px]">
+				<h2 class="text-xl font-semibold">Chat</h2>
+
+				<input
+					type="text"
+					id="chat-input"
+					class="bg-transparent border-2 border-zinc-600 rounded-md p-2"
+					placeholder="Type a message..."
+				/>
+
+				<button
+					id="chat-send"
+					class="w-full h-10 bg-zinc-600 text-white rounded-md p-2 flex items-center justify-center disabled:bg-zinc-800 hover:bg-zinc-500 transition-colors"
+				>
+					<div id="chat-send-text">Send</div>
+					<div id="chat-send-loader" class="loader"></div>
+				</button>
+
+				<button
+					id="chat-clear"
+					class="w-full h-10 border-2 border-zinc-600 text-white rounded-md p-2 flex items-center justify-center disabled:bg-zinc-500 hover:bg-zinc-800 transition-colors"
+				>
+					<div id="chat-send-text">Clear</div>
+				</button>
+
+				<div
+					id="chat-history"
+					class="flex flex-col gap-y-2 mt-4 max-h-[calc(100vh-334px)] overflow-y-scroll custom-scroll"
+				></div>
+			</div>
+
+			<div class="flex flex-col gap-y-2 w-full max-w-[420px]">
+				<h2 class="text-xl font-semibold">Folders</h2>
+
+				<button
+					id="folder-access"
+					class="w-full bg-zinc-600 text-white rounded-md p-2 hover:bg-zinc-500 transition-colors"
+				>
+					Manage folder access
+				</button>
+
+				<div
+					id="access-list"
+					class="flex flex-col gap-y-2 mt-4 border-2 border-zinc-600 rounded-md p-2 max-h-[calc(100vh-280px)] overflow-y-scroll custom-scroll"
+				></div>
+			</div>
+		</div>
+
+		<script src="./renderer.js"></script>
+	</body>
+</html>
