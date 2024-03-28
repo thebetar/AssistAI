@@ -1,6 +1,9 @@
 const chatInput = document.getElementById('chat-input');
 const chatSend = document.getElementById('chat-send');
 
+let loadingInterval = null;
+let loadingCounter = 0;
+
 // Logic for displaying chat history
 function createRow(item) {
 	const chatItem = document.createElement('table');
@@ -47,8 +50,13 @@ window.electronAPI.receiveChatData(data => {
 
 	chatSendButton.disabled = false;
 
+	if (loadingInterval) {
+		clearInterval(loadingInterval);
+		loadingCounter = 0;
+	}
+
 	chatSendButtonText.classList.remove('hidden');
-	// chatSendButtonLoader.classList.add('hidden');
+	chatSendButtonLoader.classList.add('hidden');
 
 	const chat = document.getElementById('chat-history');
 
@@ -81,6 +89,13 @@ chatSendButton.addEventListener('click', () => {
 
 	chatSendButtonText.classList.add('hidden');
 	chatSendButtonLoader.classList.remove('hidden');
+
+	loadingInterval = setInterval(() => {
+		loadingCounter += 100;
+
+		const timerSpan = document.querySelector('#chat-timer');
+		timerSpan.textContent = `(${Number(loadingCounter / 1000).toFixed(1)}s)`;
+	}, 100);
 
 	window.electronAPI.sendChatData(message);
 	chatInput.value = '';

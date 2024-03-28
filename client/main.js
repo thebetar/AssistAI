@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { invokeModel } = require('./chat');
+const { invokeModel } = require('./chat/chat');
 
 const indexFile = path.join(__dirname, 'index.html');
 

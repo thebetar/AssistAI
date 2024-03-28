@@ -1,10 +1,9 @@
-// Custom loader
 .loader {
 	transform: rotateZ(45deg);
 	perspective: 1000px;
 	border-radius: 50%;
-	width: 28px;
-	height: 28px;
+	width: 26px;
+	height: 26px;
 	color: #fff;
 }
 .loader:before,
