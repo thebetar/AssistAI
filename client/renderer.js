@@ -114,3 +114,10 @@ window.electronAPI.receiveAccessData(data => {
 });
 
 window.electronAPI.getAccessData();
+
+// Logic for opening access data
+const accessOpenButton = document.getElementById('access-open');
+
+accessOpenButton.addEventListener('click', () => {
+	window.electronAPI.openAccessData();
+});

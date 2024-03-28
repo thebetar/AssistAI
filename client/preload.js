@@ -7,4 +7,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
 	clearChatData: () => ipcRenderer.send('clear-chat-data'),
 	receiveAccessData: callback => ipcRenderer.on('receive-access-data', (event, message) => callback(message)),
 	getAccessData: () => ipcRenderer.send('get-access-data'),
+	openAccessData: () => ipcRenderer.send('open-access-data'),
 });

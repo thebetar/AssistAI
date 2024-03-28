@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { invokeModel } = require('./chat');
@@ -35,6 +35,11 @@ function createWindow() {
 		fs.writeFileSync(path.join(__dirname, 'data', 'chat.json'), '[]');
 
 		handleGetChatData(event);
+	});
+	ipcMain.on('open-access-data', event => {
+		const filesDirPath = path.join(__dirname, 'data', 'files');
+
+		shell.openPath(filesDirPath);
 	});
 
 	mainWindow.loadFile(indexFile);

@@ -10,15 +10,14 @@ const chatModel = new ChatOllama({
 	model: 'tinyllama',
 });
 
-const prompt = ChatPromptTemplate.fromTemplate(`
-	You are to get all your answers from the provided context:
+const prompt =
+	ChatPromptTemplate.fromTemplate(`Answer the following question based only on the provided context, keep the answer short to a max of 100 words.:
 
-	<context>
-	{context}
-	</context>
+<context>
+{context}
+</context>
 
-	Question: {input}
-`);
+Question: {input}`);
 
 let docs;
 let documentChain;
@@ -69,22 +68,18 @@ function getFilteredDocuments(filter) {
 		}, [])
 		.sort((a, b) => b.score - a.score)
 		.map(doc => doc.doc)
-		.slice(0, 10);
+		.slice(0, 20);
 }
 
 async function invokeModel(message) {
 	const documents = getFilteredDocuments(message);
-
-	console.log('Invoking model with documents:', documents);
 
 	const response = await documentChain.invoke({
 		input: message,
 		context: documents,
 	});
 
-	console.log('Model response:', response.content);
-
-	return response.content;
+	return response;
 }
 
 module.exports = {
