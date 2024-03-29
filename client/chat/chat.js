@@ -49,7 +49,7 @@ let documentChain;
 })();
 
 function countKeywords(doc, keywords) {
-	return keywords.reduce((acc, keyword) => {
+	const keywordCount = keywords.reduce((acc, keyword) => {
 		if (doc.pageContent.includes(keyword)) {
 			// Gets total occurences +1 by splitting into array everytime occurence is found
 			acc += doc.pageContent.split(keyword).length - 1;
@@ -57,6 +57,16 @@ function countKeywords(doc, keywords) {
 
 		return acc;
 	}, 0);
+
+	const wordCount = doc.pageContent.split(' ').length;
+
+	const MIN_WORDS = 200;
+
+	if (wordCount < MIN_WORDS) {
+		return keywordCount / MIN_WORDS;
+	}
+
+	return keywordCount / wordCount;
 }
 
 function filterKeywords(keyword, docsContent) {
@@ -82,6 +92,8 @@ function getFilteredDocuments(filter) {
 
 	fs.appendFileSync(logFile, `keywords: ${keywords.join(', ')}\n`);
 
+	let wordCounter = 0;
+
 	return docs
 		.reduce((acc, doc) => {
 			if (keywords.some(keyword => doc.pageContent.toLowerCase().includes(keyword))) {
@@ -95,13 +107,28 @@ function getFilteredDocuments(filter) {
 		}, [])
 		.sort((a, b) => b.score - a.score)
 		.map(doc => doc.doc)
-		.slice(0, 4);
+		.reduce((acc, doc) => {
+			// Get the first 3000 words from the documentslist
+			const MAX_WORDS = 3000;
+
+			if (wordCounter > MAX_WORDS) {
+				return acc;
+			}
+
+			wordCounter += doc.pageContent.split(' ').length;
+
+			acc.push(doc);
+
+			return acc;
+		}, []);
 }
 
 async function invokeModel(message) {
 	fs.appendFileSync(logFile, `message: ${message}\n`);
 
 	const documents = getFilteredDocuments(message);
+
+	console.log(`Prompt ${message}, documents ${documents.length}`);
 
 	const startTime = Date.now();
 

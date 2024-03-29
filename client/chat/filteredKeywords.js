@@ -86,4 +86,9 @@ module.exports = [
 	'get',
 	'each',
 	'important',
+	'different',
+	'between',
+	'both',
+	'next',
+	'difference',
 ];
