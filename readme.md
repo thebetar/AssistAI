@@ -4,33 +4,22 @@ This project aims to create a small but efficient LLM that can be run locally on
 
 Notes should be stored in the `data/files` folder in a textual format like `.txt` or `.md`.
 
-Both ways of running this application require `ollama` with the models `llama3.2:1b` for the chat and `mxbai-embed-large` for the embeddings
+Both ways of running this application require `ollama` with the models `gemma3:1b` for the chat and `mxbai-embed-large` for the embeddings
 
-## Frontend
-
-This application has a simple frontend build in Electron that can be used to input questions and easily manage documents that are used for context.
-
-1. Navigate to `client` folder with `cd client`
-2. To install all depencencies run `npm install`
-3. To run the application `npm start`
-
-## CLI
+## How to run
 
 This application also contains a CLI tool using python.
 
-1. To create a virtual environment run `python3 -m venv .venv`
-2. To run the virtual environment run `source .venv/bin/activate`
-3. To install all dependencies run `pip install -r ./requirements.txt`
-4. To initially build the model `python3 ./src/main.py`
-5. To run the FastAPi server `fastapi dev src/main.py --port 12345` (fastapi\[standard\] might have to be installed using `pip install fastapi[standard]`)
-6. Use the shell script to send a question `./assist-ai.zsh "{QUESTION}"` (might not have executions permissions, use `chmod u+x ./assist.zsh` to give execution permissions)
+1. This project requires both `Docker` and `Ollama` to be installed. Be sure to have both installed and for Ollama also install `gemma3:1b` and `mxbai-embed-large` which are the two models used to run this program
+2. Build the dockerfile and run it simply by running `docker compose up -d --build` this will build the images and run it in detached mode.
+3. Use the CLI tool that can be found in `assist-as.zsh` or use the web interface at `localhost:12345`
 
 When using this method it is wise to also configure it in a way that your `zsh` or `bash` configuration knows where to find this file. For instance
 
 ```bash
-assist-ai() {
-    python3 ~/PATH/AssistAI/main.py "$@"
-}
+echo alias assist-ai='$HOME/AssistAI/assist-ai.zsh'
 ```
+
+Assuming that AssistAI was installed in the home directory.
 
 https://docs.llamaindex.ai/en/stable/getting_started/starter_example_local/

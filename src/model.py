@@ -243,3 +243,8 @@ class CustomDocumentModel:
         )
 
         return answer
+
+
+if __name__ == "__main__":
+    model = CustomDocumentModel()
+    print(model.invoke("What is a checksum?"))
