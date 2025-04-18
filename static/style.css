@@ -1,0 +1,15 @@
+.response {
+	margin-top: 2em;
+	background: #f1f1f1;
+	padding: 1em;
+	border-radius: 4px;
+}
+/* Add this for scaling and scrolling long responses */
+.response-scroll {
+	max-height: 60vh;
+	overflow-y: auto;
+	/* Optional: add a border or shadow for clarity */
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	background: #fafafa;
+}

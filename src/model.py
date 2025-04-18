@@ -30,7 +30,7 @@ class CustomDocumentModel:
         start_time = time.time()
 
         self.model = ChatOllama(
-            model="llama3.2:1b",
+            model="gemma3:1b",
             temperature=0.1,
             base_url=OLLAMA_URL,
         )
