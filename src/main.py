@@ -14,7 +14,7 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-model = CustomDocumentModel(
+assist_model = CustomDocumentModel(
     silent=False,
     refresh=False,
 )
@@ -35,7 +35,7 @@ async def root(request: Request):
 
 @app.post("/", response_class=HTMLResponse)
 async def ask_question(request: Request, question: str = Form(...)):
-    response = model.invoke(question)
+    response = assist_model.invoke(question)
     return templates.TemplateResponse(
         "template.html",
         {"request": request, "response": response, "question": question},
@@ -44,7 +44,7 @@ async def ask_question(request: Request, question: str = Form(...)):
 
 @app.post("/question")
 async def question(query: QuestionQuery):
-    response = model.invoke(query.question)
+    response = assist_model.invoke(query.question)
     return response
 
 
@@ -71,10 +71,16 @@ async def manage_files(request: Request, success: str = None):
 @app.post("/manage/upload")
 async def upload_file(request: Request, files: List[UploadFile] = File(...)):
     os.makedirs(DATA_FILES_DIR, exist_ok=True)
+
     for file in files:
         file_path = os.path.join(DATA_FILES_DIR, file.filename)
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
+
+    # Directly call the mangled private methods (Python name mangling)
+    assist_model._CustomDocumentModel__load_documents()
+    assist_model._CustomDocumentModel__load_vector_store(force=True)
+
     # Redirect with success message
     return RedirectResponse(url="/manage?success=1", status_code=303)
 
