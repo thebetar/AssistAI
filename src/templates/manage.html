@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title>Manage Documents</title>
+		<link rel="stylesheet" href="/static/style.css" />
+	</head>
+	<body>
+		<div class="container">
+			<h1>Manage Documents</h1>
+
+			{% if success %}
+			<div class="success-message">File uploaded successfully!</div>
+			{% endif %}
+
+			<div class="documents-info">
+				These documents are used as the knowledge base for answering your questions.
+				<a class="documents-info-button" href="/">Back to Chat</a>
+			</div>
+
+			<form action="/manage/upload" method="post" enctype="multipart/form-data" class="upload-form">
+				<input type="file" name="file" required class="upload-input" />
+				<button type="submit" class="upload-btn">Upload</button>
+			</form>
+
+			<h2>Files</h2>
+
+			<ul class="manage-list">
+				{% for file in files %}
+				<li class="manage-list-item">
+					<span class="manage-filename">{{ file }}</span>
+					<span class="manage-actions">
+						<a
+							href="/manage/download/{{ file }}"
+							target="_blank"
+							class="manage-action-btn manage-download-btn"
+							style="margin-bottom: 8px"
+							>Download</a
+						>
+						<form action="/manage/delete/{{ file }}" method="post" style="width: 100%; margin: 0">
+							<button
+								type="submit"
+								class="manage-action-btn manage-delete-btn"
+								onclick="return confirm('Delete {{ file }}?')"
+							>
+								Delete
+							</button>
+						</form>
+					</span>
+				</li>
+				{% else %}
+				<li style="color: #888; padding: 8px">No files found.</li>
+				{% endfor %}
+			</ul>
+		</div>
+	</body>
+</html>

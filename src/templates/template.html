@@ -8,6 +8,12 @@
 	<body>
 		<div class="container">
 			<h1>Assist AI</h1>
+
+			<div class="documents-info">
+				This model answers questions based on your documents manage them here:
+				<a class="documents-info-button" href="/manage">Manage Documents</a>
+			</div>
+
 			<form method="post" class="question-form">
 				<input
 					type="text"
@@ -18,6 +24,7 @@
 				/>
 				<button type="submit">Ask</button>
 			</form>
+
 			{% if response %}
 			<div class="response">
 				<h2>Response:</h2>
