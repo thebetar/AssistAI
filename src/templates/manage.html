@@ -4,13 +4,30 @@
 		<meta charset="UTF-8" />
 		<title>Manage Documents</title>
 		<link rel="stylesheet" href="/static/style.css" />
+		<script>
+			function filterFiles() {
+				const filter = document.getElementById('file-filter').value.trim().toLowerCase();
+				const items = document.querySelectorAll('.manage-list-item');
+
+				items.forEach(item => {
+					const filename = item.querySelector('.manage-filename').textContent.toLowerCase();
+					item.style.display = filename.includes(filter) ? '' : 'none';
+				});
+			}
+			window.addEventListener('DOMContentLoaded', function () {
+				const filterInput = document.getElementById('file-filter');
+				if (filterInput) {
+					filterInput.addEventListener('input', filterFiles);
+				}
+			});
+		</script>
 	</head>
 	<body>
 		<div class="container">
 			<h1>Manage Documents</h1>
 
 			{% if success %}
-			<div class="success-message">File uploaded successfully!</div>
+			<div class="success-message">File{{ files|length > 1 and 's' or '' }} uploaded successfully!</div>
 			{% endif %}
 
 			<div class="documents-info">
@@ -19,11 +36,22 @@
 			</div>
 
 			<form action="/manage/upload" method="post" enctype="multipart/form-data" class="upload-form">
-				<input type="file" name="file" required class="upload-input" />
+				<input type="file" name="files" multiple required class="upload-input" />
 				<button type="submit" class="upload-btn">Upload</button>
 			</form>
 
 			<h2>Files</h2>
+
+			<div style="margin-bottom: 1em">
+				<input
+					type="text"
+					id="file-filter"
+					placeholder="Filter files..."
+					class="upload-input"
+					style="width: 100%"
+					autocomplete="off"
+				/>
+			</div>
 
 			<ul class="manage-list">
 				{% for file in files %}

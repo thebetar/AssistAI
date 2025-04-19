@@ -5,6 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import os
 import shutil
+from typing import List
 
 from model import CustomDocumentModel
 
@@ -68,13 +69,12 @@ async def manage_files(request: Request, success: str = None):
 
 
 @app.post("/manage/upload")
-async def upload_file(request: Request, file: UploadFile = File(...)):
+async def upload_file(request: Request, files: List[UploadFile] = File(...)):
     os.makedirs(DATA_FILES_DIR, exist_ok=True)
-    file_path = os.path.join(DATA_FILES_DIR, file.filename)
-
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
+    for file in files:
+        file_path = os.path.join(DATA_FILES_DIR, file.filename)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
     # Redirect with success message
     return RedirectResponse(url="/manage?success=1", status_code=303)
 
