@@ -4,6 +4,94 @@
 		<meta charset="UTF-8" />
 		<title>Assist AI Client</title>
 		<link rel="stylesheet" href="/static/style.css" />
+		<style>
+			.loader {
+				display: inline-block;
+				width: 32px;
+				height: 32px;
+				border: 4px solid #f3f3f3;
+				border-top: 4px solid #007bff;
+				border-radius: 50%;
+				animation: spin 1s linear infinite;
+				margin-right: 12px;
+				vertical-align: middle;
+			}
+			@keyframes spin {
+				0% {
+					transform: rotate(0deg);
+				}
+				100% {
+					transform: rotate(360deg);
+				}
+			}
+			.loading-row {
+				display: flex;
+				align-items: center;
+				gap: 1em;
+				margin-top: 2em;
+				justify-content: center;
+			}
+			#timer {
+				font-size: 1.1em;
+				color: #333;
+				min-width: 60px;
+			}
+		</style>
+
+		<script>
+			let loading = false;
+			let timerInterval = null;
+			let startTime = null;
+
+			function startLoading() {
+				loading = true;
+				document.getElementById('loading-row').style.display = 'flex';
+				const responseDiv = document.getElementById('response-block');
+
+				if (responseDiv) {
+					responseDiv.style.display = 'none';
+				}
+
+				startTime = Date.now();
+				updateTimer();
+				timerInterval = setInterval(updateTimer, 100);
+			}
+
+			function stopLoading() {
+				loading = false;
+				document.getElementById('loading-row').style.display = 'none';
+				clearInterval(timerInterval);
+				const responseDiv = document.getElementById('response-block');
+				if (responseDiv) {
+					responseDiv.style.display = 'block';
+				}
+			}
+
+			function updateTimer() {
+				if (!loading) {
+					return;
+				}
+
+				const now = Date.now();
+				const elapsed = ((now - startTime) / 1000).toFixed(1);
+				document.getElementById('timer').textContent = elapsed + 's';
+			}
+
+			window.addEventListener('DOMContentLoaded', function () {
+				const form = document.querySelector('.question-form');
+
+				if (form) {
+					form.addEventListener('submit', function () {
+						startLoading();
+					});
+					// Hide response on submit if still visible
+					const responseDiv = document.getElementById('response-block');
+					if (responseDiv)
+						responseDiv.style.display =
+							'{{ response is defined and response is not none }}' === 'True' ? '' : 'none';
+				}
+			});
+		</script>
 	</head>
 	<body>
 		<div class="container">
@@ -25,11 +113,23 @@
 				<button type="submit">Ask</button>
 			</form>
 
+			<div id="loading-row" class="loading-row" style="display: none">
+				<div class="loader"></div>
+				<span>Loading...</span>
+				<span id="timer">0.0s</span>
+			</div>
+
 			{% if response %}
-			<div class="response">
+			<script>
+				stopLoading();
+			</script>
+
+			<div class="response" id="response-block">
 				<h2>Response:</h2>
 				<div class="response-scroll">{{ response }}</div>
 			</div>
+			{% else %}
+			<div id="response-block" style="display: none"></div>
 			{% endif %}
 		</div>
 	</body>
