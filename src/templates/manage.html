@@ -4,7 +4,85 @@
 		<meta charset="UTF-8" />
 		<title>Manage Documents</title>
 		<link rel="stylesheet" href="/static/style.css" />
+		<style>
+			.loader {
+				display: inline-block;
+				width: 32px;
+				height: 32px;
+				border: 4px solid #f3f3f3;
+				border-top: 4px solid #007bff;
+				border-radius: 50%;
+				animation: spin 1s linear infinite;
+				margin-right: 12px;
+				vertical-align: middle;
+			}
+			@keyframes spin {
+				0% {
+					transform: rotate(0deg);
+				}
+				100% {
+					transform: rotate(360deg);
+				}
+			}
+			.loading-row {
+				display: flex;
+				align-items: center;
+				gap: 1em;
+				margin: 1em 0;
+				justify-content: center;
+			}
+			#upload-timer {
+				font-size: 1.1em;
+				color: #333;
+				min-width: 60px;
+			}
+		</style>
+
 		<script>
+			let uploadLoading = false;
+			let uploadTimerInterval = null;
+			let uploadStartTime = null;
+
+			function startUploadLoading() {
+				uploadLoading = true;
+				document.getElementById('upload-loading-row').style.display = 'flex';
+				uploadStartTime = Date.now();
+				updateUploadTimer();
+				uploadTimerInterval = setInterval(updateUploadTimer, 100);
+			}
+
+			function stopUploadLoading() {
+				uploadLoading = false;
+				document.getElementById('upload-loading-row').style.display = 'none';
+				clearInterval(uploadTimerInterval);
+				// Show vectorstore success message
+				const vsSuccess = document.getElementById('vectorstore-success');
+				if (vsSuccess) vsSuccess.style.display = 'block';
+			}
+
+			function updateUploadTimer() {
+				if (!uploadLoading) return;
+				const now = Date.now();
+				const elapsed = ((now - uploadStartTime) / 1000).toFixed(1);
+				document.getElementById('upload-timer').textContent = elapsed + 's';
+			}
+
+			window.addEventListener('DOMContentLoaded', function () {
+				const uploadForm = document.querySelector('.upload-form');
+				if (uploadForm) {
+					uploadForm.addEventListener('submit', function () {
+						startUploadLoading();
+					});
+
+					// Add loader to all delete forms
+					document.querySelectorAll('.manage-list .manage-list-item form').forEach(function (form) {
+						form.addEventListener('submit', function () {
+							startUploadLoading();
+						});
+					});
+				}
+			});
+
 			function filterFiles() {
 				const filter = document.getElementById('file-filter').value.trim().toLowerCase();
 				const items = document.querySelectorAll('.manage-list-item');
@@ -16,6 +94,7 @@
 			}
 			window.addEventListener('DOMContentLoaded', function () {
 				const filterInput = document.getElementById('file-filter');
+
 				if (filterInput) {
 					filterInput.addEventListener('input', filterFiles);
 				}
@@ -26,8 +105,25 @@
 		<div class="container">
 			<h1>Manage Documents</h1>
 
-			{% if success %}
-			<div class="success-message">File{{ files|length > 1 and 's' or '' }} uploaded successfully!</div>
+			<div id="upload-loading-row" class="loading-row" style="display: none">
+				<div class="loader"></div>
+				<span>Recreating vector store with new document(s)...</span>
+				<span id="upload-timer">0.0s</span>
+			</div>
+
+			{% if updated %}
+			<div class="success-message">Knowledgebase changed successfully!</div>
+			<script>
+				stopUploadLoading();
+
+				setTimeout(() => {
+					const vsSuccess = document.querySelector('.success-message');
+
+					if (vsSuccess) {
+						vsSuccess.style.display = 'none';
+					}
+				}, 5000);
+			</script>
 			{% endif %}
 
 			<div class="documents-info">
@@ -66,13 +162,7 @@
 							>Download</a
 						>
 						<form action="/manage/delete/{{ file }}" method="post" style="width: 100%; margin: 0">
-							<button
-								type="submit"
-								class="manage-action-btn manage-delete-btn"
-								onclick="return confirm('Delete {{ file }}?')"
-							>
-								Delete
-							</button>
+							<button type="submit" class="manage-action-btn manage-delete-btn">Delete</button>
 						</form>
 					</span>
 				</li>
