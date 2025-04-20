@@ -10,3 +10,4 @@ services:
             - '12345:12345'
         environment:
             - OLLAMA_URL=http://host.docker.internal:11434
+        restart: always

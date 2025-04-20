@@ -2,8 +2,6 @@ import os
 import json
 import hashlib
 import time
-import sys
-import itertools
 
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains.retrieval import create_retrieval_chain
@@ -40,22 +38,20 @@ class CustomDocumentModel:
             )
 
         # Create basic prompt
-        self.prompt = ChatPromptTemplate.from_template(
-            """
-            You are an expert assistant specialized in answering questions based on provided documents. Use the **context** as your primary source of information, and if applicable, draw from the **chat history** for continuity. 
-
-            - Always prioritize the **context** for your answers.
-            - If the **context** is unclear or insufficient, use the **chat history** to provide continuity.
-            - Respond concisely and descriptively, ensuring clarity and relevance.
-            - For technical questions or code-related inquiries, provide detailed examples where appropriate.
-
-            **Context**: {context}
-            **Chat History** (if relevant): {chat_history}
-            **Question**: {input}
-
-            Your response should only answer the question and be directly based on the context or history.
-        """
+        self.prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    "You are an expert assistant specialized in answering questions based on provided documents. "
+                    "Use the context and chat history below to answer. Only use this information—do not make things up."
+                    "Start the answer with, 'According to your notes, ' and end with a summary of the answer. ",
+                ),
+                ("system", "Context:\n{context}"),
+                ("system", "Chat History:\n{chat_history}"),
+                ("human", "{input}"),
+            ]
         )
+
         if not self.silent:
             print(
                 f"[custom-chat-model] Prompt initiated ({self.__get_run_time(start_time)})"
