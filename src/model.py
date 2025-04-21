@@ -15,8 +15,19 @@ OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 
 
 class CustomDocumentModel:
-    def __init__(self, silent=False, refresh=False):
+    def __init__(
+        self,
+        chat_model="gemma3:1b",
+        embedding_model="mxbai-embed-large",
+        temperature=0.1,
+        silent=False,
+        refresh=False,
+    ):
         self.log_file = os.path.join(os.path.dirname(__file__), "data", "log.txt")
+
+        self.chat_model = chat_model
+        self.embedding_model = embedding_model
+        self.temperature = temperature
 
         self.history = []
         self.silent = silent
@@ -28,8 +39,8 @@ class CustomDocumentModel:
         start_time = time.time()
 
         self.model = ChatOllama(
-            model="gemma3:1b",
-            temperature=0.1,
+            model=self.chat_model,
+            temperature=self.temperature,
             base_url=OLLAMA_URL,
         )
 
@@ -93,7 +104,7 @@ class CustomDocumentModel:
 
         # Create embeddings model
         self.embeddings = OllamaEmbeddings(
-            model="mxbai-embed-large", base_url=OLLAMA_URL
+            model=self.embedding_model, base_url=OLLAMA_URL
         )
 
         # Store documents in database for fast search in all documents for model

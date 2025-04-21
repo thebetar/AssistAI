@@ -124,13 +124,13 @@
 
 						<h2>Files</h2>
 
-						<div style="margin-bottom: 1em">
+						<div style="display: flex;">
 							<input
 								type="text"
 								id="file-filter"
 								placeholder="Filter files..."
-								class="upload-input"
-								style="width: 100%"
+								class="form-input"
+								style="flex: 1;"
 								autocomplete="off"
 								value=${() => filter()}
 								onInput=${e => setFilter(e.target.value)}

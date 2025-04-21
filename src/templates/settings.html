@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title>Settings</title>
+		<link rel="stylesheet" href="/static/style.css" />
+		<style>
+			.settings-row {
+				display: flex;
+				flex-direction: column;
+				margin-bottom: 1.5em;
+			}
+			.settings-label {
+				display: block;
+				margin-bottom: 0.5em;
+				font-weight: bold;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="root"></div>
+		<script type="module">
+			import { createSignal, onMount } from 'https://esm.sh/solid-js@1.8.1';
+			import { render } from 'https://esm.sh/solid-js@1.8.1/web';
+			import html from 'https://esm.sh/solid-js@1.8.1/html';
+
+			const DEFAULT_CHAT_MODEL = 'gemma3:1b';
+			const DEFAULT_EMBEDDING_MODEL = 'mxbai-embed-large';
+			const DEFAULT_TEMPERATURE = 0.1;
+
+			const App = () => {
+				const [chatModel, setChatModel] = createSignal(DEFAULT_CHAT_MODEL);
+				const [embeddingModel, setEmbeddingModel] = createSignal(DEFAULT_EMBEDDING_MODEL);
+				const [temperature, setTemperature] = createSignal(DEFAULT_TEMPERATURE);
+
+				const fetchSettings = async () => {
+					const res = await fetch('/settings');
+					const data = await res.json();
+					setChatModel(data.chat_model || DEFAULT_CHAT_MODEL);
+					setEmbeddingModel(data.embedding_model || DEFAULT_EMBEDDING_MODEL);
+					setTemperature(data.temperature || DEFAULT_TEMPERATURE);
+				};
+
+				onMount(fetchSettings);
+
+				const handleSave = e => {
+					e.preventDefault();
+					alert(
+						`Settings saved!\nChat model: ${chatModel()}\nEmbeddings: ${embeddingModel()}\nTemperature: ${temperature()}`,
+					);
+				};
+
+				return html`
+					<div class="container">
+						<h1>Settings</h1>
+
+						<form onSubmit=${handleSave}>
+							<div class="settings-row">
+								<label class="settings-label" for="chat-model">Chat Model</label>
+								<input
+									id="chat-model"
+									class="form-input"
+									value=${chatModel()}
+									onChange=${e => setChatModel(e.target.value)}
+								/>
+							</div>
+							<div class="settings-row">
+								<label class="settings-label" for="embedding-model">Embeddings Model</label>
+								<input
+									id="embedding-model"
+									class="form-input"
+									value=${embeddingModel()}
+									onChange=${e => setEmbeddingModel(e.target.value)}
+								/>
+							</div>
+							<div class="settings-row">
+								<label class="settings-label" for="temperature">Temperature</label>
+								<input
+									id="temperature"
+									type="number"
+									min="0"
+									max="2"
+									step="0.01"
+									class="form-input"
+									value=${temperature()}
+									onInput=${e => setTemperature(Number(e.target.value))}
+								/>
+							</div>
+
+							<div class="button-row">
+								<button
+									type="button"
+									class="secondary-btn"
+									style="flex: 1;"
+									onClick=${() => (window.location.href = '/')}
+								>
+									Back
+								</button>
+
+								<button type="submit" class="primary-btn" style="flex: 1;">Save</button>
+							</div>
+						</form>
+					</div>
+				`;
+			};
+
+			render(App, document.getElementById('root'));
+		</script>
+	</body>
+</html>

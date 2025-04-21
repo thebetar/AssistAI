@@ -6,12 +6,21 @@ body {
 }
 
 .container {
+	position: relative;
 	max-width: 720px;
 	margin: 40px auto;
 	background: #fff;
 	padding: 2em;
 	border-radius: 8px;
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.form-input {
+	min-width: 200px;
+	padding: 0.75em;
+	border: 1px solid #333;
+	border-radius: 8px;
+	font-size: 1em;
 }
 
 .question-form-row {
@@ -21,13 +30,10 @@ body {
 
 .question-form input[type='text'] {
 	flex: 1;
-	padding: 0.75em;
-	border: 1px solid #333;
-	border-radius: 8px;
-	font-size: 1em;
 }
 
-.question-form-submit {
+.primary-btn {
+	min-height: 42px;
 	width: 72px;
 	background: #007bff;
 	color: #fff;
@@ -36,11 +42,12 @@ body {
 	font-size: 1em;
 	cursor: pointer;
 }
-.question-form-submit:hover {
+.primary-btn:hover {
 	background: #0056b3;
 }
 
-.question-form-clear {
+.secondary-btn {
+	min-height: 42px;
 	width: 72px;
 	background: #6c757d;
 	color: #fff;
@@ -50,7 +57,7 @@ body {
 	cursor: pointer;
 }
 
-.question-form-clear:hover {
+.secondary-btn:hover {
 	background: #5a6268;
 }
 
@@ -154,13 +161,6 @@ h2 {
 	margin-bottom: 2em;
 }
 
-.upload-input {
-	flex: 1;
-	padding: 0.5em;
-	border-radius: 8px;
-	border: 1px solid #333;
-}
-
 .upload-btn {
 	padding: 0.5em 1.5em;
 	background: #007bff;
@@ -227,12 +227,30 @@ h2 {
 	padding: 1em;
 	font-size: 12px;
 }
+
 .chat-history-scroll {
 	max-height: 250px;
 	overflow-y: auto;
 }
+
 .chat-history-entry {
 	margin-bottom: 1em;
 	padding-bottom: 0.5em;
 	border-bottom: 1px solid #e0e0e0;
+}
+
+.settings-gear {
+	position: absolute;
+	top: 24px;
+	right: 32px;
+	width: 32px;
+	height: 32px;
+	cursor: pointer;
+}
+
+.button-row {
+	display: flex;
+	justify-content: space-between;
+	gap: 1em;
+	margin-top: 1em;
 }

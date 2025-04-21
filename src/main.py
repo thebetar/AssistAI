@@ -15,16 +15,29 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+# Load the config.json file
+config_path = os.path.join(os.path.dirname(__file__), "config.json")
+
+if not os.path.exists(config_path):
+    # Write default config to config file
+    config = {
+        "chat_model": "gemma3:1b",
+        "embedding_model": "mxbai-embed-large",
+        "temperature": 0.1,
+    }
+    with open(config_path, "w") as f:
+        json.dump(config, f, indent=4)
+else:
+    # Read the config file
+    with open(config_path, "r") as f:
+        config = json.load(f)
+
 assist_model = CustomDocumentModel(
     silent=False,
     refresh=False,
 )
 
 DATA_FILES_DIR = os.path.join(os.path.dirname(__file__), "data", "files")
-
-
-class QuestionQuery(BaseModel):
-    question: str
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -165,3 +178,49 @@ async def delete_file(filename: str):
         updated_files.sort()
 
     return {"files": updated_files}
+
+
+@app.get("/settings", response_class=HTMLResponse)
+async def settings_page(request: Request):
+    return templates.TemplateResponse("settings.html", {"request": request})
+
+
+@app.get("/settings/get")
+async def get_settings():
+    # Return the current settings as JSON
+    return {
+        "chat_model": assist_model.chat_model,
+        "embedding_model": assist_model.embedding_model,
+        "temperature": assist_model.temperature,
+    }
+
+
+@app.post("/settings/update")
+async def update_settings(
+    request: Request,
+    chat_model: str = Form("gemma3:1b"),
+    embedding_model: str = Form("gemma3:1b"),
+    temperature: float = Form(0.1),
+):
+    assist_model.chat_model = chat_model
+    assist_model.embedding_model = embedding_model
+    assist_model.temperature = temperature
+
+    # Store in config.json
+    config_path = os.path.join(os.path.dirname(__file__), "config.json")
+    config = {
+        "chat_model": chat_model,
+        "embedding_model": embedding_model,
+        "temperature": temperature,
+    }
+    with open(config_path, "w") as f:
+        json.dump(config, f, indent=4)
+
+    return templates.TemplateResponse(
+        "settings.html",
+        {
+            "request": request,
+            "rag": assist_model.rag,
+            "rag_model": assist_model.rag_model,
+        },
+    )
