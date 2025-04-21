@@ -119,6 +119,22 @@ async def upload_file(request: Request, files: List[UploadFile] = File(...)):
     return {"files": updated_files}
 
 
+@app.post("/manage/upload_note")
+async def upload_note(filename: str = Form(...), content: str = Form(...)):
+    os.makedirs(DATA_FILES_DIR, exist_ok=True)
+    file_path = os.path.join(DATA_FILES_DIR, filename)
+
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(content)
+
+    # Reload the vector store based on the new documents
+    assist_model.load_documents()
+    assist_model.load_vector_store(force=True)
+
+    # Optionally reload vector store if needed
+    return {"success": True, "filename": filename}
+
+
 @app.get("/manage/download/{filename}", response_class=FileResponse)
 async def download_file(filename: str):
     file_path = os.path.join(DATA_FILES_DIR, filename)

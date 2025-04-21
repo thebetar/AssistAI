@@ -32,9 +32,17 @@ body {
 	flex: 1;
 }
 
-.primary-btn {
+.btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 92px;
 	min-height: 42px;
-	width: 72px;
+	padding: 0 1em;
+	gap: 4px;
+}
+
+.primary-btn {
 	background: #007bff;
 	color: #fff;
 	border: none;
@@ -47,8 +55,6 @@ body {
 }
 
 .secondary-btn {
-	min-height: 42px;
-	width: 72px;
 	background: #6c757d;
 	color: #fff;
 	border: none;
@@ -68,10 +74,9 @@ body {
 }
 
 .documents-info-button {
-	display: block;
+	font-size: 16px;
 	text-decoration: none;
 	width: fit-content;
-	padding: 0.5em 1.5em;
 	margin: 8px 0;
 	background: #007bff;
 	color: #fff;

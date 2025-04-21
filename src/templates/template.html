@@ -11,6 +11,36 @@
 				history: {% if history %}{{ history | tojson }}{% else %}[]{% endif %},
 			};
 		</script>
+		<style>
+			.chat-history-header-row {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-bottom: 1em;
+			}
+
+			.chat-history-header-row h2 {
+				margin: 0;
+			}
+
+			.save-note-btn {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				gap: 2px;
+				background: #28a745;
+				color: #fff;
+				border: none;
+				border-radius: 8px;
+				padding: 0.5em 1em;
+				cursor: pointer;
+				font-size: 1em;
+				transition: background 0.2s;
+			}
+			.save-note-btn:hover {
+				background: #218838;
+			}
+		</style>
 	</head>
 	<body>
 		<div id="root"></div>
@@ -26,6 +56,7 @@
 				const [history, setHistory] = createSignal(window.__INITIAL_STATE__.history || []);
 				const [loading, setLoading] = createSignal(false);
 				const [timer, setTimer] = createSignal(0);
+				const [saveSuccess, setSaveSuccess] = createSignal(false);
 
 				let timerInterval = null;
 
@@ -56,6 +87,7 @@
 					formData.append('question', question());
 					formData.append('use_rag', useRag() ? 'on' : 'off');
 					formData.append('clear', 'false');
+
 					const res = await fetch('/question', {
 						method: 'POST',
 						body: formData,
@@ -78,7 +110,7 @@
 					formData.append('use_rag', useRag() ? 'on' : 'off');
 					formData.append('clear', 'true');
 
-					const res = await fetch('/', {
+					const res = await fetch('/question', {
 						method: 'POST',
 						body: formData,
 					});
@@ -103,6 +135,37 @@
 					`;
 				};
 
+				const handleSaveNote = async () => {
+					const now = new Date();
+					const iso = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+					const filename = `${iso.split('T')[0]}_${iso.split('T')[1]}_assistai_note.md`;
+
+					let note = `# Assist AI Conversation (${now.toLocaleString()})\n\n`;
+					const noteHistory = history().slice();
+
+					noteHistory.reverse().forEach(([q, a], idx) => {
+						note += `## Q${idx + 1}\n${q}\n\n## A${idx + 1}\n${a}\n\n`;
+					});
+
+					// Save note via API
+					const formData = new FormData();
+					formData.append('filename', filename);
+					formData.append('content', note);
+
+					const res = await fetch('/manage/upload_note', {
+						method: 'POST',
+						body: formData,
+					});
+
+					if (!res.ok) {
+						return;
+					}
+
+					window.scrollTo(0, 0);
+					setSaveSuccess(true);
+					setTimeout(() => setSaveSuccess(false), 3000);
+				};
+
 				return html`
 					<div class="container">
 						<a href="/settings" class="settings-gear" title="Settings">
@@ -122,6 +185,12 @@
 								/>
 							</svg>
 						</a>
+						${() =>
+							saveSuccess()
+								? html`<div class="success-message" style="margin-top: 1em;">
+										Conversation saved as note!
+								  </div>`
+								: null}
 
 						<h1>Assist AI</h1>
 						<div class="documents-info">
@@ -129,7 +198,35 @@
 							format) and your chat history. With efficient RAG, the model can use a large number of notes
 							as context. You can also ask questions without RAG for faster responses. To manage your
 							documents, click the button below. To clear the chat history, type "clear".
-							<a class="documents-info-button" href="/manage">Manage Documents</a>
+							<a class="btn documents-info-button" href="/manage">
+								<svg
+									width="16px"
+									height="16px"
+									viewBox="0 0 24 24"
+									fill="none"
+									xmlns="http://www.w3.org/2000/svg"
+								>
+									<path
+										d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z"
+										stroke="currentColor"
+										stroke-width="1.5"
+									/>
+									<path
+										d="M8 12H16"
+										stroke="currentColor"
+										stroke-width="1.5"
+										stroke-linecap="round"
+									/>
+									<path d="M8 8H16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+									<path
+										d="M8 16H13"
+										stroke="currentColor"
+										stroke-width="1.5"
+										stroke-linecap="round"
+									/>
+								</svg>
+								Manage Documents
+							</a>
 						</div>
 						<form class="question-form" onSubmit=${handleSubmit}>
 							<div class="question-form-row">
@@ -143,13 +240,44 @@
 									onInput=${e => setQuestion(e.target.value)}
 									disabled=${() => loading()}
 								/>
-								<button class="primary-btn" type="submit" disabled=${loading()}>Ask</button>
+
+								<button class="btn primary-btn" type="submit" disabled=${loading()}>
+									<svg
+										width="16px"
+										height="16px"
+										viewBox="0 0 24 24"
+										fill="none"
+										xmlns="http://www.w3.org/2000/svg"
+									>
+										<path
+											d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 13.5997 2.37562 15.1116 3.04346 16.4525C3.22094 16.8088 3.28001 17.2161 3.17712 17.6006L2.58151 19.8267C2.32295 20.793 3.20701 21.677 4.17335 21.4185L6.39939 20.8229C6.78393 20.72 7.19121 20.7791 7.54753 20.9565C8.88837 21.6244 10.4003 22 12 22Z"
+											fill="currentColor"
+										/>
+									</svg>
+									Ask
+								</button>
+
 								<button
-									class="secondary-btn"
+									class="btn secondary-btn"
 									type="button"
 									onClick=${handleClear}
 									disabled=${() => loading()}
 								>
+									<svg
+										width="16px"
+										height="16px"
+										viewBox="0 0 24 24"
+										fill="none"
+										xmlns="http://www.w3.org/2000/svg"
+									>
+										<path
+											d="M18 6V16.2C18 17.8802 18 18.7202 17.673 19.362C17.3854 19.9265 16.9265 20.3854 16.362 20.673C15.7202 21 14.8802 21 13.2 21H10.8C9.11984 21 8.27976 21 7.63803 20.673C7.07354 20.3854 6.6146 19.9265 6.32698 19.362C6 18.7202 6 17.8802 6 16.2V6M4 6H20M16 6L15.7294 5.18807C15.4671 4.40125 15.3359 4.00784 15.0927 3.71698C14.8779 3.46013 14.6021 3.26132 14.2905 3.13878C13.9376 3 13.523 3 12.6936 3H11.3064C10.477 3 10.0624 3 9.70951 3.13878C9.39792 3.26132 9.12208 3.46013 8.90729 3.71698C8.66405 4.00784 8.53292 4.40125 8.27064 5.18807L8 6"
+											stroke="currentColor"
+											stroke-width="2"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+										/>
+									</svg>
 									Clear
 								</button>
 							</div>
@@ -189,7 +317,28 @@
 							history() && history().length > 0
 								? html`
 										<div class="chat-history">
-											<h2>Chat History</h2>
+											<div class="chat-history-header-row">
+												<h2>Chat History</h2>
+												<button
+													class="save-note-btn"
+													title="Save conversation as note"
+													onClick=${handleSaveNote}
+												>
+													<svg
+														fill="currentColor"
+														width="12px"
+														height="12px"
+														viewBox="0 0 32 32"
+														xmlns="http://www.w3.org/2000/svg"
+													>
+														<path
+															d="M26 0H6a6 6 0 0 0-6 6v20a6 6 0 0 0 6 6h20a6 6 0 0 0 6-6V6a6 6 0 0 0-6-6zm-6 2v3a1 1 0 1 0 2 0V2h1v7H9V2zm10 24a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V6a4 4 0 0 1 4-4h1v8a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V2h1a4 4 0 0 1 4 4zM24 14H8a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V15a1 1 0 0 0-1-1zm-1 12H9V16h14zM12 20h8a1 1 0 0 0 0-2h-8a1 1 0 0 0 0 2zM12 24h8a1 1 0 0 0 0-2h-8a1 1 0 0 0 0 2z"
+														/>
+													</svg>
+													Save
+												</button>
+											</div>
+
 											<div class="chat-history-scroll">${history().map(renderHistoryEntry)}</div>
 										</div>
 								  `
