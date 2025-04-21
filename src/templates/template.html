@@ -16,29 +16,16 @@
 				display: flex;
 				justify-content: space-between;
 				align-items: center;
-				margin-bottom: 1em;
 			}
 
 			.chat-history-header-row h2 {
 				margin: 0;
 			}
 
-			.save-note-btn {
-				display: flex;
-				align-items: center;
-				justify-content: center;
-				gap: 2px;
-				background: #28a745;
-				color: #fff;
-				border: none;
-				border-radius: 8px;
-				padding: 0.5em 1em;
-				cursor: pointer;
-				font-size: 1em;
-				transition: background 0.2s;
-			}
-			.save-note-btn:hover {
-				background: #218838;
+			.save-note-extra {
+				resize: vertical;
+				min-height: 2.5em;
+				font-size: 16px;
 			}
 		</style>
 	</head>
@@ -49,6 +36,8 @@
 			import { render } from 'https://esm.sh/solid-js@1.8.1/web';
 			import html from 'https://esm.sh/solid-js@1.8.1/html';
 
+			const NOTE_KEY = 'assistai_save_note_extra';
+
 			const App = () => {
 				const [question, setQuestion] = createSignal('');
 				const [response, setResponse] = createSignal('');
@@ -57,8 +46,16 @@
 				const [loading, setLoading] = createSignal(false);
 				const [timer, setTimer] = createSignal(0);
 				const [saveSuccess, setSaveSuccess] = createSignal(false);
+				const [noteExtra, setNoteExtra] = createSignal(
+					typeof localStorage !== 'undefined' && localStorage.getItem(NOTE_KEY)
+						? localStorage.getItem(NOTE_KEY)
+						: '',
+				);
+				const [noteLoading, setNoteLoading] = createSignal(false);
+				const [noteTimer, setNoteTimer] = createSignal(0);
 
 				let timerInterval = null;
+				let noteTimerInterval = null;
 
 				const startLoading = () => {
 					setLoading(true);
@@ -75,8 +72,31 @@
 					if (timerInterval) clearInterval(timerInterval);
 				};
 
+				const startNoteLoading = () => {
+					setNoteLoading(true);
+					setNoteTimer(0);
+
+					const start = Date.now();
+					noteTimerInterval = setInterval(() => {
+						setNoteTimer(((Date.now() - start) / 1000).toFixed(1));
+					}, 100);
+				};
+
+				const stopNoteLoading = () => {
+					setNoteLoading(false);
+					if (noteTimerInterval) {
+						clearInterval(noteTimerInterval);
+					}
+				};
+
 				onCleanup(() => {
-					if (timerInterval) clearInterval(timerInterval);
+					if (timerInterval) {
+						clearInterval(timerInterval);
+					}
+
+					if (noteTimerInterval) {
+						clearInterval(noteTimerInterval);
+					}
 				});
 
 				const handleSubmit = async e => {
@@ -135,12 +155,28 @@
 					`;
 				};
 
+				const handleNoteExtraInput = e => {
+					setNoteExtra(e.target.value);
+
+					if (typeof localStorage !== 'undefined') {
+						localStorage.setItem(NOTE_KEY, e.target.value);
+					}
+				};
+
 				const handleSaveNote = async () => {
+					startNoteLoading();
 					const now = new Date();
 					const iso = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
 					const filename = `${iso.split('T')[0]}_${iso.split('T')[1]}_assistai_note.md`;
 
 					let note = `# Assist AI Conversation (${now.toLocaleString()})\n\n`;
+
+					const extra = noteExtra();
+
+					if (extra && extra.trim().length > 0) {
+						note += `> ${extra.trim().replace(/\n/g, '\n> ')}\n\n`;
+					}
+
 					const noteHistory = history().slice();
 
 					noteHistory.reverse().forEach(([q, a], idx) => {
@@ -157,13 +193,16 @@
 						body: formData,
 					});
 
+					stopNoteLoading();
+
 					if (!res.ok) {
 						return;
 					}
 
 					window.scrollTo(0, 0);
 					setSaveSuccess(true);
-					setTimeout(() => setSaveSuccess(false), 3000);
+
+					setTimeout(() => setSaveSuccess(false), 5000);
 				};
 
 				return html`
@@ -185,12 +224,6 @@
 								/>
 							</svg>
 						</a>
-						${() =>
-							saveSuccess()
-								? html`<div class="success-message" style="margin-top: 1em;">
-										Conversation saved as note!
-								  </div>`
-								: null}
 
 						<h1>Assist AI</h1>
 						<div class="documents-info">
@@ -228,6 +261,7 @@
 								Manage Documents
 							</a>
 						</div>
+
 						<form class="question-form" onSubmit=${handleSubmit}>
 							<div class="question-form-row">
 								<input
@@ -314,20 +348,36 @@
 											  `
 											: null}
 						${() =>
+							saveSuccess()
+								? html`<div class="success-message" style="margin-top: 1em;">
+										Conversation saved as note!
+								  </div>`
+								: null}
+						${() =>
+							noteLoading()
+								? html`
+										<div class="loading-row" style="display: flex">
+											<span>Recreating vector store with new note...</span>
+											<span class="loading-timer">${noteTimer()}s</span>
+										</div>
+								  `
+								: null}
+						${() =>
 							history() && history().length > 0
 								? html`
 										<div class="chat-history">
 											<div class="chat-history-header-row">
 												<h2>Chat History</h2>
+
 												<button
-													class="save-note-btn"
+													class="btn save-note-btn"
 													title="Save conversation as note"
 													onClick=${handleSaveNote}
 												>
 													<svg
 														fill="currentColor"
-														width="12px"
-														height="12px"
+														width="16px"
+														height="16px"
 														viewBox="0 0 32 32"
 														xmlns="http://www.w3.org/2000/svg"
 													>
@@ -338,6 +388,13 @@
 													Save
 												</button>
 											</div>
+
+											<textarea
+												class="form-input save-note-extra"
+												placeholder="Add a custom note to include in the saved note (will be saved for next time)..."
+												value=${noteExtra()}
+												onBlur=${handleNoteExtraInput}
+											></textarea>
 
 											<div class="chat-history-scroll">${history().map(renderHistoryEntry)}</div>
 										</div>

@@ -40,14 +40,16 @@ body {
 	min-height: 42px;
 	padding: 0 1em;
 	gap: 4px;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: background 0.2s;
 }
 
 .primary-btn {
 	background: #007bff;
 	color: #fff;
 	border: none;
-	border-radius: 8px;
-	font-size: 1em;
+	font-size: 16px;
 	cursor: pointer;
 }
 .primary-btn:hover {
@@ -58,13 +60,24 @@ body {
 	background: #6c757d;
 	color: #fff;
 	border: none;
-	border-radius: 8px;
-	font-size: 1em;
+	font-size: 16px;
 	cursor: pointer;
 }
 
 .secondary-btn:hover {
 	background: #5a6268;
+}
+
+.save-note-btn {
+	background: #28a745;
+	color: #fff;
+	border: none;
+	cursor: pointer;
+	font-size: 16px;
+}
+
+.save-note-btn:hover {
+	background: #218838;
 }
 
 .documents-info {
@@ -131,7 +144,10 @@ h2 {
 }
 
 .manage-action-btn {
-	display: block;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 4px;
 	width: 100%;
 	padding: 0.5em 0;
 	text-align: center;
@@ -175,7 +191,6 @@ h2 {
 }
 
 .upload-btn {
-	padding: 0.5em 1.5em;
 	background: #007bff;
 	color: #fff;
 	border: none;
@@ -234,6 +249,9 @@ h2 {
 }
 
 .chat-history {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5em;
 	margin-top: 2em;
 	background: #f8f8f8;
 	border-radius: 8px;
