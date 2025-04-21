@@ -32,13 +32,30 @@ class CustomDocumentModel:
             temperature=0.1,
             base_url=OLLAMA_URL,
         )
+
         if not self.silent:
             print(
                 f"[custom-chat-model] Model initiated ({self.__get_run_time(start_time)})"
             )
 
         # Create basic prompt
-        self.prompt = ChatPromptTemplate.from_messages(
+        self.default_prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    "You are a helpful and knowledgeable assistant. "
+                    "Use the previous chat history below to provide accurate, concise, and context-aware answers. "
+                    "If you are unsure, say so. Do not make up information.",
+                ),
+                ("system", "Chat History:\n{chat_history}"),
+                ("human", "{input}"),
+            ]
+        )
+
+        self.default_chain = self.default_prompt | self.model
+
+        # Create basic RAG prompt
+        self.rag_prompt = ChatPromptTemplate.from_messages(
             [
                 (
                     "system",
@@ -60,7 +77,7 @@ class CustomDocumentModel:
         # Initiate chain for chat with documents
         self.documents_chain = create_stuff_documents_chain(
             llm=self.model,
-            prompt=self.prompt,
+            prompt=self.rag_prompt,
         )
         if not self.silent:
             print(
@@ -87,11 +104,12 @@ class CustomDocumentModel:
             )
 
         # Get retriever from vector store
-        retriever = self.vector_store.as_retriever(k=5)
+        self.retriever = self.vector_store.as_retriever(k=5)
         self.retrieval_chain = create_retrieval_chain(
             combine_docs_chain=self.documents_chain,
-            retriever=retriever,
+            retriever=self.retriever,
         )
+
         if not self.silent:
             print(
                 f"[custom-chat-model] Retrieval chain ({self.__get_run_time(start_time)})"
@@ -201,7 +219,7 @@ class CustomDocumentModel:
         return True
 
     # Create function to call the chain
-    def invoke(self, message):
+    def invoke(self, message, use_rag=True):
         with open(self.log_file, "a") as f:
             f.write(f"message: {message}\n")
 
@@ -211,18 +229,34 @@ class CustomDocumentModel:
 
         start_time = time.time()
 
-        history_context = (
-            "\n".join([f"Question: {h[0]}\nAnswer: {h[1]}" for h in self.history[-5:]])
-            if self.history
-            else ""
-        )
+        if use_rag:
+            history_context = (
+                "\n".join(
+                    [f"Question: {h[0]}\nAnswer: {h[1]}" for h in self.history[-5:]]
+                )
+                if self.history
+                else ""
+            )
 
-        response = self.retrieval_chain.invoke(
-            {
-                "input": message,
-                "chat_history": history_context,
-            }
-        )
+            response = self.retrieval_chain.invoke(
+                {
+                    "input": message,
+                    "chat_history": history_context,
+                }
+            )
+        else:
+            history_context = (
+                "\n".join([f"Question: {h[0]}\nAnswer: {h[1]}" for h in self.history])
+                if self.history
+                else ""
+            )
+
+            response = self.documents_chain.invoke(
+                {
+                    "input": message,
+                    "chat_history": history_context,
+                }
+            )
 
         answer = response["answer"]
 

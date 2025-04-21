@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, Form, UploadFile, File
-from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -95,6 +95,20 @@ async def download_file(filename: str):
         return FileResponse(file_path, filename=filename)
 
     return HTMLResponse("File not found", status_code=404)
+
+
+@app.get("/manage/view/{filename}", response_class=HTMLResponse)
+async def view_file(filename: str):
+    file_path = os.path.join(DATA_FILES_DIR, filename)
+    if not os.path.exists(file_path):
+        return HTMLResponse("File not found", status_code=404)
+    with open(file_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    # Render a template with the raw markdown, let JS (marked) render it
+    return templates.TemplateResponse(
+        "view_file.html",
+        {"request": {}, "filename": filename, "content": content},
+    )
 
 
 @app.post("/manage/delete/{filename}")
