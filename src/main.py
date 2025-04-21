@@ -3,10 +3,9 @@ import os
 import shutil
 from typing import List
 from fastapi import FastAPI, Request, Form, UploadFile, File
-from fastapi.responses import HTMLResponse, FileResponse, Response
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
 
 from model import CustomDocumentModel
 
@@ -18,23 +17,16 @@ templates = Jinja2Templates(directory="templates")
 # Load the config.json file
 config_path = os.path.join(os.path.dirname(__file__), "config.json")
 
-if not os.path.exists(config_path):
-    # Write default config to config file
-    config = {
-        "chat_model": "gemma3:1b",
-        "embedding_model": "mxbai-embed-large",
-        "temperature": 0.1,
-    }
-    with open(config_path, "w") as f:
-        json.dump(config, f, indent=4)
-else:
-    # Read the config file
-    with open(config_path, "r") as f:
-        config = json.load(f)
+# Read the config file
+with open(config_path, "r") as f:
+    config = json.load(f)
 
 assist_model = CustomDocumentModel(
     silent=False,
     refresh=False,
+    chat_model=config.get("chat_model", None),
+    embedding_model=config.get("embedding_model", None),
+    temperature=config.get("temperature", 0.1),
 )
 
 DATA_FILES_DIR = os.path.join(os.path.dirname(__file__), "data", "files")
@@ -51,7 +43,7 @@ async def root(request: Request):
     )
 
 
-@app.post("/question", response_class=Response)
+@app.post("/question", response_class=JSONResponse)
 async def ask_question(
     request: Request,
     question: str = Form(""),
@@ -64,14 +56,12 @@ async def ask_question(
     response = assist_model.invoke(question, use_rag=use_rag_bool, clear=clear_bool)
     chat_history = getattr(assist_model, "history", None)
 
-    return json.dumps(
-        {
-            "response": response,
-            "question": question,
-            "history": chat_history,
-            "use_rag": use_rag_bool,
-        }
-    )
+    return {
+        "response": response,
+        "question": question,
+        "history": chat_history,
+        "use_rag": use_rag_bool,
+    }
 
 
 # --- Document Management ---
@@ -86,7 +76,7 @@ async def manage_files(request: Request, updated: str = None):
     )
 
 
-@app.get("/manage/files")
+@app.get("/manage/files", response_class=JSONResponse)
 async def get_files():
     files = []
 
@@ -102,7 +92,7 @@ async def get_files():
     return {"files": files}
 
 
-@app.post("/manage/upload")
+@app.post("/manage/upload", response_class=JSONResponse)
 async def upload_file(request: Request, files: List[UploadFile] = File(...)):
     os.makedirs(DATA_FILES_DIR, exist_ok=True)
 
@@ -129,7 +119,7 @@ async def upload_file(request: Request, files: List[UploadFile] = File(...)):
     return {"files": updated_files}
 
 
-@app.get("/manage/download/{filename}")
+@app.get("/manage/download/{filename}", response_class=FileResponse)
 async def download_file(filename: str):
     file_path = os.path.join(DATA_FILES_DIR, filename)
 
@@ -156,7 +146,7 @@ async def view_file(filename: str):
     )
 
 
-@app.delete("/manage/delete/{filename}")
+@app.delete("/manage/delete/{filename}", response_class=JSONResponse)
 async def delete_file(filename: str):
     file_path = os.path.join(DATA_FILES_DIR, filename)
 
@@ -195,16 +185,20 @@ async def get_settings():
     }
 
 
-@app.post("/settings/update")
+@app.post("/settings/update", response_class=JSONResponse)
 async def update_settings(
     request: Request,
     chat_model: str = Form("gemma3:1b"),
     embedding_model: str = Form("gemma3:1b"),
     temperature: float = Form(0.1),
 ):
+    # Update the settings in the assist_model instance
     assist_model.chat_model = chat_model
     assist_model.embedding_model = embedding_model
     assist_model.temperature = temperature
+
+    # Reload model chain
+    assist_model.load_model()
 
     # Store in config.json
     config_path = os.path.join(os.path.dirname(__file__), "config.json")
@@ -216,11 +210,8 @@ async def update_settings(
     with open(config_path, "w") as f:
         json.dump(config, f, indent=4)
 
-    return templates.TemplateResponse(
-        "settings.html",
-        {
-            "request": request,
-            "rag": assist_model.rag,
-            "rag_model": assist_model.rag_model,
-        },
-    )
+    return {
+        "chat_model": chat_model,
+        "embedding_model": embedding_model,
+        "temperature": temperature,
+    }

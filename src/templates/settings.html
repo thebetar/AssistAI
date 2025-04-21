@@ -20,7 +20,7 @@
 	<body>
 		<div id="root"></div>
 		<script type="module">
-			import { createSignal, onMount } from 'https://esm.sh/solid-js@1.8.1';
+			import { createSignal, onCleanup } from 'https://esm.sh/solid-js@1.8.1';
 			import { render } from 'https://esm.sh/solid-js@1.8.1/web';
 			import html from 'https://esm.sh/solid-js@1.8.1/html';
 
@@ -33,26 +33,74 @@
 				const [embeddingModel, setEmbeddingModel] = createSignal(DEFAULT_EMBEDDING_MODEL);
 				const [temperature, setTemperature] = createSignal(DEFAULT_TEMPERATURE);
 
+				const [loading, setLoading] = createSignal(false);
+				const [timer, setTimer] = createSignal(0);
+				const [success, setSuccess] = createSignal(false);
+
+				let timerInterval = null;
+
 				const fetchSettings = async () => {
-					const res = await fetch('/settings');
+					const res = await fetch('/settings/get');
 					const data = await res.json();
+
 					setChatModel(data.chat_model || DEFAULT_CHAT_MODEL);
 					setEmbeddingModel(data.embedding_model || DEFAULT_EMBEDDING_MODEL);
-					setTemperature(data.temperature || DEFAULT_TEMPERATURE);
+					setTemperature(data.temperature ?? DEFAULT_TEMPERATURE);
 				};
 
-				onMount(fetchSettings);
+				const startLoading = () => {
+					setLoading(true);
+					setTimer(0);
+					const start = Date.now();
+					timerInterval = setInterval(() => {
+						setTimer(((Date.now() - start) / 1000).toFixed(1));
+					}, 100);
+				};
 
-				const handleSave = e => {
+				const stopLoading = () => {
+					setLoading(false);
+					if (timerInterval) clearInterval(timerInterval);
+					setSuccess(true);
+					setTimeout(() => setSuccess(false), 5000);
+				};
+
+				onCleanup(() => {
+					if (timerInterval) clearInterval(timerInterval);
+				});
+
+				fetchSettings();
+
+				const handleSave = async e => {
 					e.preventDefault();
-					alert(
-						`Settings saved!\nChat model: ${chatModel()}\nEmbeddings: ${embeddingModel()}\nTemperature: ${temperature()}`,
-					);
+					startLoading();
+					const formData = new FormData();
+					formData.append('chat_model', chatModel());
+					formData.append('embedding_model', embeddingModel());
+					formData.append('temperature', temperature());
+					await fetch('/settings/update', {
+						method: 'POST',
+						body: formData,
+					});
+					stopLoading();
 				};
 
 				return html`
 					<div class="container">
 						<h1>Settings</h1>
+
+						${() =>
+							loading()
+								? html`
+										<div class="loading-row" style="display: flex">
+											<span>Recreating chain with new settings...</span>
+											<span class="loading-timer">${timer()}s</span>
+										</div>
+								  `
+								: null}
+						${() =>
+							success()
+								? html` <div class="success-message">Knowledgebase updated successfully!</div> `
+								: null}
 
 						<form onSubmit=${handleSave}>
 							<div class="settings-row">
@@ -60,8 +108,9 @@
 								<input
 									id="chat-model"
 									class="form-input"
-									value=${chatModel()}
+									value=${() => chatModel()}
 									onChange=${e => setChatModel(e.target.value)}
+									disabled=${() => loading()}
 								/>
 							</div>
 							<div class="settings-row">
@@ -69,8 +118,9 @@
 								<input
 									id="embedding-model"
 									class="form-input"
-									value=${embeddingModel()}
+									value=${() => embeddingModel()}
 									onChange=${e => setEmbeddingModel(e.target.value)}
+									disabled=${() => loading()}
 								/>
 							</div>
 							<div class="settings-row">
@@ -84,6 +134,7 @@
 									class="form-input"
 									value=${temperature()}
 									onInput=${e => setTemperature(Number(e.target.value))}
+									disabled=${() => loading()}
 								/>
 							</div>
 
@@ -93,11 +144,14 @@
 									class="secondary-btn"
 									style="flex: 1;"
 									onClick=${() => (window.location.href = '/')}
+									disabled=${() => loading()}
 								>
 									Back
 								</button>
 
-								<button type="submit" class="primary-btn" style="flex: 1;">Save</button>
+								<button type="submit" class="primary-btn" style="flex: 1;" disabled=${() => loading()}>
+									Save
+								</button>
 							</div>
 						</form>
 					</div>

@@ -33,9 +33,9 @@ class CustomDocumentModel:
         self.silent = silent
         self.refresh = refresh
 
-        self.init()
+        self.load_model()
 
-    def init(self):
+    def load_model(self):
         start_time = time.time()
 
         self.model = ChatOllama(

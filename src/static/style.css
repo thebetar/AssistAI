@@ -161,6 +161,14 @@ h2 {
 	margin-bottom: 2em;
 }
 
+.upload-input {
+	flex: 1;
+	padding: 0.75em;
+	border: 1px solid #333;
+	border-radius: 8px;
+	font-size: 1em;
+}
+
 .upload-btn {
 	padding: 0.5em 1.5em;
 	background: #007bff;
