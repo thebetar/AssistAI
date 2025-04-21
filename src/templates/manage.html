@@ -4,146 +4,186 @@
 		<meta charset="UTF-8" />
 		<title>Manage Documents</title>
 		<link rel="stylesheet" href="/static/style.css" />
-
-		<script>
-			let uploadLoading = false;
-			let uploadTimerInterval = null;
-			let uploadStartTime = null;
-
-			function startUploadLoading() {
-				uploadLoading = true;
-				document.getElementById('upload-loading-row').style.display = 'flex';
-				uploadStartTime = Date.now();
-				updateUploadTimer();
-				uploadTimerInterval = setInterval(updateUploadTimer, 100);
-			}
-
-			function stopUploadLoading() {
-				uploadLoading = false;
-				document.getElementById('upload-loading-row').style.display = 'none';
-				clearInterval(uploadTimerInterval);
-				// Show vectorstore success message
-				const vsSuccess = document.getElementById('vectorstore-success');
-				if (vsSuccess) vsSuccess.style.display = 'block';
-			}
-
-			function updateUploadTimer() {
-				if (!uploadLoading) return;
-				const now = Date.now();
-				const elapsed = ((now - uploadStartTime) / 1000).toFixed(1);
-				document.getElementById('upload-timer').textContent = elapsed + 's';
-			}
-
-			window.addEventListener('DOMContentLoaded', function () {
-				const uploadForm = document.querySelector('.upload-form');
-				if (uploadForm) {
-					uploadForm.addEventListener('submit', function () {
-						startUploadLoading();
-					});
-
-					// Add loader to all delete forms
-					document.querySelectorAll('.manage-list .manage-list-item form').forEach(function (form) {
-						form.addEventListener('submit', function () {
-							startUploadLoading();
-						});
-					});
-				}
-			});
-
-			function filterFiles() {
-				const filter = document.getElementById('file-filter').value.trim().toLowerCase();
-				const items = document.querySelectorAll('.manage-list-item');
-
-				items.forEach(item => {
-					const filename = item.querySelector('.manage-filename').textContent.toLowerCase();
-					item.style.display = filename.includes(filter) ? '' : 'none';
-				});
-			}
-			window.addEventListener('DOMContentLoaded', function () {
-				const filterInput = document.getElementById('file-filter');
-
-				if (filterInput) {
-					filterInput.addEventListener('input', filterFiles);
-				}
-			});
-		</script>
 	</head>
 	<body>
-		<div class="container">
-			<h1>Manage Documents</h1>
+		<div id="root"></div>
+		<script type="module">
+			import { createSignal, onCleanup, onMount } from 'https://esm.sh/solid-js@1.8.1';
+			import { render } from 'https://esm.sh/solid-js@1.8.1/web';
+			import html from 'https://esm.sh/solid-js@1.8.1/html';
 
-			<div id="upload-loading-row" class="loading-row" style="display: none">
-				<div class="loader"></div>
-				<span>Recreating vector store with new document(s)...</span>
-				<span id="upload-timer" class="loading-timer">0.0s</span>
-			</div>
+			const App = () => {
+				const [files, setFiles] = createSignal([]);
+				const [uploadLoading, setUploadLoading] = createSignal(false);
+				const [uploadTimer, setUploadTimer] = createSignal(0);
+				const [filter, setFilter] = createSignal('');
+				const [success, setSuccess] = createSignal(false);
 
-			{% if updated %}
-			<div class="success-message">Knowledgebase changed successfully!</div>
-			<script>
-				stopUploadLoading();
+				let timerInterval = null;
 
-				setTimeout(() => {
-					const vsSuccess = document.querySelector('.success-message');
+				const fetchFiles = async () => {
+					const res = await fetch('/manage/files');
+					const data = await res.json();
+					setFiles(data.files || []);
+				};
 
-					if (vsSuccess) {
-						vsSuccess.style.display = 'none';
+				onMount(fetchFiles);
+
+				const startUploadLoading = () => {
+					setUploadLoading(true);
+					setUploadTimer(0);
+
+					const start = Date.now();
+					timerInterval = setInterval(() => {
+						setUploadTimer(((Date.now() - start) / 1000).toFixed(1));
+					}, 100);
+				};
+
+				const stopUploadLoading = () => {
+					setUploadLoading(false);
+
+					if (timerInterval) {
+						clearInterval(timerInterval);
 					}
-				}, 5000);
-			</script>
-			{% endif %}
 
-			<div class="documents-info">
-				These documents are used as the knowledge base for answering your questions.
-				<a class="documents-info-button" href="/">Back to Chat</a>
-			</div>
+					setSuccess(true);
+					setTimeout(() => setSuccess(false), 5000);
+				};
 
-			<form action="/manage/upload" method="post" enctype="multipart/form-data" class="upload-form">
-				<input type="file" name="files" multiple required class="upload-input" />
-				<button type="submit" class="upload-btn">Upload</button>
-			</form>
+				onCleanup(() => {
+					if (timerInterval) clearInterval(timerInterval);
+				});
 
-			<h2>Files</h2>
+				const handleUpload = async e => {
+					e.preventDefault();
+					const form = e.target;
+					const formData = new FormData(form);
 
-			<div style="margin-bottom: 1em">
-				<input
-					type="text"
-					id="file-filter"
-					placeholder="Filter files..."
-					class="upload-input"
-					style="width: 100%"
-					autocomplete="off"
-				/>
-			</div>
+					startUploadLoading();
 
-			<ul class="manage-list">
-				{% for file in files %}
-				<li class="manage-list-item">
-					<span class="manage-filename">{{ file }}</span>
-					<span class="manage-actions">
-						<a
-							href="/manage/view/{{ file }}"
-							target="_blank"
-							class="manage-action-btn"
-							style="background: #6c757d; margin-bottom: 8px"
-							>View</a
+					const res = await fetch('/manage/upload', {
+						method: 'POST',
+						body: formData,
+					});
+
+					const data = await res.json();
+
+					setFiles(data.files || []);
+					stopUploadLoading();
+
+					form.reset();
+				};
+
+				const handleDelete = async (e, filename) => {
+					e.preventDefault();
+					startUploadLoading();
+					const res = await fetch(`/manage/delete/${encodeURIComponent(filename)}`, {
+						method: 'DELETE',
+					});
+					const data = await res.json();
+					setFiles(data.files || []);
+					stopUploadLoading();
+				};
+
+				const filteredFiles = () =>
+					files().filter(f => f.toLowerCase().includes(filter().trim().toLowerCase()));
+
+				return html`
+					<div class="container">
+						<h1>Manage Documents</h1>
+
+						${() =>
+							uploadLoading()
+								? html`
+										<div id="upload-loading-row" class="loading-row" style="display: flex">
+											<span>Recreating vector store with new document(s)...</span>
+											<span id="upload-timer" class="loading-timer">${uploadTimer()}s</span>
+										</div>
+								  `
+								: null}
+						${() =>
+							success()
+								? html` <div class="success-message">Knowledgebase updated successfully!</div> `
+								: null}
+
+						<div class="documents-info">
+							These documents are used as the knowledge base for answering your questions.
+							<a class="documents-info-button" href="/">Back to Chat</a>
+						</div>
+
+						<form
+							action="/manage/upload"
+							method="post"
+							enctype="multipart/form-data"
+							class="upload-form"
+							onSubmit=${handleUpload}
 						>
-						<a
-							href="/manage/download/{{ file }}"
-							target="_blank"
-							class="manage-action-btn manage-download-btn"
-							style="margin-bottom: 8px"
-							>Download</a
-						>
-						<form action="/manage/delete/{{ file }}" method="post" style="width: 100%; margin: 0">
-							<button type="submit" class="manage-action-btn manage-delete-btn">Delete</button>
+							<input type="file" name="files" multiple required class="upload-input" />
+							<button type="submit" class="upload-btn" disabled=${() => uploadLoading()}>Upload</button>
 						</form>
-					</span>
-				</li>
-				{% else %}
-				<li style="color: #888; padding: 8px">No files found.</li>
-				{% endfor %}
-			</ul>
-		</div>
+
+						<h2>Files</h2>
+
+						<div style="margin-bottom: 1em">
+							<input
+								type="text"
+								id="file-filter"
+								placeholder="Filter files..."
+								class="upload-input"
+								style="width: 100%"
+								autocomplete="off"
+								value=${() => filter()}
+								onInput=${e => setFilter(e.target.value)}
+								disabled=${() => uploadLoading()}
+							/>
+						</div>
+
+						<ul class="manage-list">
+							${() =>
+								filteredFiles().length > 0
+									? filteredFiles().map(
+											file =>
+												html`
+													<li class="manage-list-item">
+														<span class="manage-filename">${file}</span>
+														<span class="manage-actions">
+															<a
+																href=${`/manage/view/${encodeURIComponent(file)}`}
+																target="_blank"
+																class="manage-action-btn"
+																style="background: #6c757d; margin-bottom: 8px"
+																>View</a
+															>
+															<a
+																href=${`/manage/download/${encodeURIComponent(file)}`}
+																target="_blank"
+																class="manage-action-btn manage-download-btn"
+																style="margin-bottom: 8px"
+																>Download</a
+															>
+															<form
+																style="width: 100%; margin: 0; display: inline"
+																onSubmit=${e => handleDelete(e, file)}
+															>
+																<button
+																	type="submit"
+																	class="manage-action-btn manage-delete-btn"
+																	disabled=${() => uploadLoading()}
+																>
+																	Delete
+																</button>
+															</form>
+														</span>
+													</li>
+												`,
+									  )
+									: html`<li style="color: #888; padding: 8px">No files found.</li>`}
+						</ul>
+					</div>
+				`;
+			};
+
+			render(App, document.getElementById('root'));
+		</script>
 	</body>
 </html>

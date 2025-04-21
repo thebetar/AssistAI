@@ -1,11 +1,12 @@
-from fastapi import FastAPI, Request, Form, UploadFile, File
-from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse, Response
-from fastapi.templating import Jinja2Templates
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+import json
 import os
 import shutil
 from typing import List
+from fastapi import FastAPI, Request, Form, UploadFile, File
+from fastapi.responses import HTMLResponse, FileResponse, Response
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
 from model import CustomDocumentModel
 
@@ -28,53 +29,36 @@ class QuestionQuery(BaseModel):
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
-    chat_history = getattr(assist_model, "history", None)
+    history = getattr(assist_model, "history", None)
+
+    print("History:", history)
 
     return templates.TemplateResponse(
-        "template.html", {"request": request, "response": None, "history": chat_history}
+        "template.html", {"request": request, "history": history}
     )
 
 
-@app.post("/", response_class=HTMLResponse)
+@app.post("/question", response_class=Response)
 async def ask_question(
     request: Request,
     question: str = Form(""),
     use_rag: str = Form("off"),
     clear: str = Form("false"),
 ):
-    print("Form values:", question, use_rag, clear)
-
-    if question == "":
-        chat_history = getattr(assist_model, "history", None)
-        return templates.TemplateResponse(
-            "template.html",
-            {"request": request, "history": chat_history},
-        )
-
     use_rag_bool = use_rag == "on"
     clear_bool = clear == "true"
 
     response = assist_model.invoke(question, use_rag=use_rag_bool, clear=clear_bool)
     chat_history = getattr(assist_model, "history", None)
 
-    print("history:", chat_history)
-
-    return templates.TemplateResponse(
-        "template.html",
+    return json.dumps(
         {
-            "request": request,
             "response": response,
             "question": question,
             "history": chat_history,
             "use_rag": use_rag_bool,
-        },
+        }
     )
-
-
-@app.post("/question")
-async def question(query: QuestionQuery):
-    response = assist_model.invoke(query.question)
-    return response
 
 
 # --- Document Management ---
@@ -82,6 +66,15 @@ async def question(query: QuestionQuery):
 
 @app.get("/manage", response_class=HTMLResponse)
 async def manage_files(request: Request, updated: str = None):
+    # Only render the template, no file list in context
+    return templates.TemplateResponse(
+        "manage.html",
+        {"request": request, "updated": updated},
+    )
+
+
+@app.get("/manage/files")
+async def get_files():
     files = []
 
     if os.path.exists(DATA_FILES_DIR):
@@ -93,10 +86,7 @@ async def manage_files(request: Request, updated: str = None):
         # Sort files by alphabetical order
         files.sort()
 
-    return templates.TemplateResponse(
-        "manage.html",
-        {"request": request, "files": files, "updated": updated},
-    )
+    return {"files": files}
 
 
 @app.post("/manage/upload")
@@ -113,8 +103,17 @@ async def upload_file(request: Request, files: List[UploadFile] = File(...)):
     assist_model.load_documents()
     assist_model.load_vector_store(force=True)
 
-    # Redirect with updated message
-    return RedirectResponse(url="/manage?updated=1", status_code=303)
+    # Return updated file list as JSON
+    updated_files = []
+    if os.path.exists(DATA_FILES_DIR):
+        updated_files = [
+            f
+            for f in os.listdir(DATA_FILES_DIR)
+            if os.path.isfile(os.path.join(DATA_FILES_DIR, f))
+        ]
+        updated_files.sort()
+
+    return {"files": updated_files}
 
 
 @app.get("/manage/download/{filename}")
@@ -144,7 +143,7 @@ async def view_file(filename: str):
     )
 
 
-@app.post("/manage/delete/{filename}")
+@app.delete("/manage/delete/{filename}")
 async def delete_file(filename: str):
     file_path = os.path.join(DATA_FILES_DIR, filename)
 
@@ -155,4 +154,14 @@ async def delete_file(filename: str):
     assist_model.load_documents()
     assist_model.load_vector_store(force=True)
 
-    return RedirectResponse(url="/manage?updated=1", status_code=303)
+    # Return updated file list as JSON
+    updated_files = []
+    if os.path.exists(DATA_FILES_DIR):
+        updated_files = [
+            f
+            for f in os.listdir(DATA_FILES_DIR)
+            if os.path.isfile(os.path.join(DATA_FILES_DIR, f))
+        ]
+        updated_files.sort()
+
+    return {"files": updated_files}

@@ -6,129 +6,173 @@
 		<link rel="stylesheet" href="/static/style.css" />
 
 		<script>
-			let loading = false;
-			let timerInterval = null;
-			let startTime = null;
-
-			function startLoading() {
-				loading = true;
-				document.getElementById('loading-row').style.display = 'flex';
-				const responseDiv = document.getElementById('response-block');
-
-				if (responseDiv) {
-					responseDiv.style.display = 'none';
-				}
-
-				startTime = Date.now();
-				updateTimer();
-				timerInterval = setInterval(updateTimer, 100);
-			}
-
-			function stopLoading() {
-				loading = false;
-				document.getElementById('loading-row').style.display = 'none';
-				clearInterval(timerInterval);
-				const responseDiv = document.getElementById('response-block');
-				if (responseDiv) {
-					responseDiv.style.display = 'block';
-				}
-			}
-
-			function updateTimer() {
-				if (!loading) {
-					return;
-				}
-
-				const now = Date.now();
-				const elapsed = ((now - startTime) / 1000).toFixed(1);
-				document.getElementById('timer').textContent = elapsed + 's';
-			}
-
-			window.addEventListener('DOMContentLoaded', function () {
-				const form = document.querySelector('.question-form');
-
-				if (!form) {
-					return;
-				}
-
-				form.addEventListener('submit', function () {
-					startLoading();
-				});
-				// Hide response on submit if still visible
-				const responseDiv = document.getElementById('response-block');
-
-				if (!responseDiv) {
-					return;
-				}
-
-				responseDiv.style.display =
-					'{{ response is defined and response is not none }}' === 'True' ? '' : 'none';
-			});
+			window.__INITIAL_STATE__ = {
+				history: {% if history %}{{ history|tojson }}{% else %}[]{% endif %}
+			};
 		</script>
 	</head>
 	<body>
-		<div class="container">
-			<h1>Assist AI</h1>
+		<div id="root"></div>
+		<script type="module">
+			import { createSignal, onCleanup } from 'https://esm.sh/solid-js@1.8.1';
+			import { render } from 'https://esm.sh/solid-js@1.8.1/web';
+			import html from 'https://esm.sh/solid-js@1.8.1/html';
 
-			<div class="documents-info">
-				Assist AI runs locally and answers your questions using the provided documents (in Markdown format) and
-				your chat history. With efficient RAG, the model can use a large number of notes as context. You can
-				also ask questions without RAG for faster responses. To manage your documents, click the button below.
-				To clear the chat history, type "clear".
-				<a class="documents-info-button" href="/manage">Manage Documents</a>
-			</div>
+			const App = () => {
+				const [question, setQuestion] = createSignal('');
+				const [response, setResponse] = createSignal('');
+				const [useRag, setUseRag] = createSignal(true);
+				const [history, setHistory] = createSignal(window.__INITIAL_STATE__.history || []);
+				const [loading, setLoading] = createSignal(false);
+				const [timer, setTimer] = createSignal(0);
 
-			<form method="post" class="question-form">
-				<div class="question-form-row">
-					<input
-						type="text"
-						name="question"
-						placeholder="Enter your question"
-						value="{{ question or '' }}"
-						required
-					/>
-					<button class="question-form-submit" type="submit">Ask</button>
-					<button class="question-form-clear" type="submit" name="clear" value="true">Clear</button>
-				</div>
+				let timerInterval = null;
 
-				<div class="question-form-row">
-					<label style="margin-top: 1em; display: inline-block">
-						<input type="checkbox" name="use_rag" value="on" {% if use_rag %}checked{% endif %} />
-						Provide answer based on documents
-					</label>
-				</div>
-			</form>
+				const startLoading = () => {
+					setLoading(true);
+					setTimer(0);
 
-			<div id="loading-row" class="loading-row" style="display: none">
-				<div class="loader"></div>
-				<span>Loading...</span>
-				<span id="timer" class="loading-timer">0.0s</span>
-			</div>
+					const start = Date.now();
+					timerInterval = setInterval(() => {
+						setTimer(((Date.now() - start) / 1000).toFixed(1));
+					}, 100);
+				};
 
-			{% if response %}
-			<script>
-				stopLoading();
-			</script>
+				const stopLoading = () => {
+					setLoading(false);
+					if (timerInterval) clearInterval(timerInterval);
+				};
 
-			<div class="response" id="response-block">
-				<h2>Response {% if use_rag %}(RAG){% endif %}:</h2>
-				<div class="response-scroll">{{ response }}</div>
-			</div>
-			{% else %}
-			<div id="response-block" style="display: none"></div>
-			{% endif %} {% if history %}
-			<div class="chat-history">
-				<h2>Chat History</h2>
-				<div class="chat-history-scroll">
-					{% for entry in history %}
-					<div class="chat-history-entry">
-						<strong>You:</strong> {{ entry[0] }}<br />
-						<strong>AI:</strong> {{ entry[1] }}
+				onCleanup(() => {
+					if (timerInterval) clearInterval(timerInterval);
+				});
+
+				const handleSubmit = async e => {
+					e.preventDefault();
+					startLoading();
+
+					const formData = new FormData();
+					formData.append('question', question());
+					formData.append('use_rag', useRag() ? 'on' : 'off');
+					formData.append('clear', 'false');
+					const res = await fetch('/question', {
+						method: 'POST',
+						body: formData,
+					});
+					const data = await res.json();
+
+					setResponse(data.response || '');
+					setHistory(data.history.reverse() || []);
+					stopLoading();
+				};
+
+				const handleClear = async e => {
+					e.preventDefault();
+					startLoading();
+
+					const formData = new FormData();
+					formData.append('question', '');
+					formData.append('use_rag', useRag() ? 'on' : 'off');
+					formData.append('clear', 'true');
+
+					const res = await fetch('/', {
+						method: 'POST',
+						body: formData,
+					});
+					const data = await res.json();
+
+					setResponse('');
+					setHistory(data.history || []);
+					setQuestion('');
+					stopLoading();
+				};
+
+				return html`
+					<div class="container">
+						<h1>Assist AI</h1>
+						<div class="documents-info">
+							Assist AI runs locally and answers your questions using the provided documents (in Markdown
+							format) and your chat history. With efficient RAG, the model can use a large number of notes
+							as context. You can also ask questions without RAG for faster responses. To manage your
+							documents, click the button below. To clear the chat history, type "clear".
+							<a class="documents-info-button" href="/manage">Manage Documents</a>
+						</div>
+						<form class="question-form" onSubmit=${handleSubmit}>
+							<div class="question-form-row">
+								<input
+									type="text"
+									name="question"
+									placeholder="Enter your question"
+									value=${() => question()}
+									required
+									onInput=${e => setQuestion(e.target.value)}
+									disabled=${() => loading()}
+								/>
+								<button class="question-form-submit" type="submit" disabled=${loading()}>Ask</button>
+								<button
+									class="question-form-clear"
+									type="button"
+									onClick=${handleClear}
+									disabled=${() => loading()}
+								>
+									Clear
+								</button>
+							</div>
+							<div class="question-form-row">
+								<label style="margin-top: 1em; display: inline-block">
+									<input
+										type="checkbox"
+										name="use_rag"
+										value="on"
+										checked=${() => useRag()}
+										onChange=${e => setUseRag(e.target.checked)}
+										disabled=${() => loading()}
+									/>
+									Provide answer based on documents
+								</label>
+							</div>
+						</form>
+
+						${() =>
+							loading()
+								? html`
+										<div id="loading-row" class="loading-row" style="display: flex">
+											<span>Loading...</span>
+											<span id="timer" class="loading-timer">${timer()}s</span>
+										</div>
+								  `
+								: () =>
+										response()
+											? html`
+													<div class="response" id="response-block">
+														<h2>Response ${useRag() ? '(RAG)' : ''}:</h2>
+														<div class="response-scroll">${response()}</div>
+													</div>
+											  `
+											: null}
+						${() =>
+							history() && history().length > 0
+								? html`
+										<div class="chat-history">
+											<h2>Chat History</h2>
+											<div class="chat-history-scroll">
+												${history().map(
+													entry => html`
+														<div class="chat-history-entry">
+															<strong>You:</strong> ${entry[0]}<br />
+															<strong>AI:</strong> ${entry[1]}
+														</div>
+													`,
+												)}
+											</div>
+										</div>
+								  `
+								: null}
 					</div>
-					{% endfor %}
-				</div>
-			</div>
-			{% endif %}
-		</div>
+				`;
+			};
+
+			render(App, document.getElementById('root'));
+		</script>
 	</body>
 </html>
