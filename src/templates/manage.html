@@ -4,39 +4,6 @@
 		<meta charset="UTF-8" />
 		<title>Manage Documents</title>
 		<link rel="stylesheet" href="/static/style.css" />
-		<style>
-			.loader {
-				display: inline-block;
-				width: 32px;
-				height: 32px;
-				border: 4px solid #f3f3f3;
-				border-top: 4px solid #007bff;
-				border-radius: 50%;
-				animation: spin 1s linear infinite;
-				margin-right: 12px;
-				vertical-align: middle;
-			}
-			@keyframes spin {
-				0% {
-					transform: rotate(0deg);
-				}
-				100% {
-					transform: rotate(360deg);
-				}
-			}
-			.loading-row {
-				display: flex;
-				align-items: center;
-				gap: 1em;
-				margin: 1em 0;
-				justify-content: center;
-			}
-			#upload-timer {
-				font-size: 1.1em;
-				color: #333;
-				min-width: 60px;
-			}
-		</style>
 
 		<script>
 			let uploadLoading = false;
@@ -108,7 +75,7 @@
 			<div id="upload-loading-row" class="loading-row" style="display: none">
 				<div class="loader"></div>
 				<span>Recreating vector store with new document(s)...</span>
-				<span id="upload-timer">0.0s</span>
+				<span id="upload-timer" class="loading-timer">0.0s</span>
 			</div>
 
 			{% if updated %}

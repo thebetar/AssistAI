@@ -4,39 +4,6 @@
 		<meta charset="UTF-8" />
 		<title>Assist AI Client</title>
 		<link rel="stylesheet" href="/static/style.css" />
-		<style>
-			.loader {
-				display: inline-block;
-				width: 32px;
-				height: 32px;
-				border: 4px solid #f3f3f3;
-				border-top: 4px solid #007bff;
-				border-radius: 50%;
-				animation: spin 1s linear infinite;
-				margin-right: 12px;
-				vertical-align: middle;
-			}
-			@keyframes spin {
-				0% {
-					transform: rotate(0deg);
-				}
-				100% {
-					transform: rotate(360deg);
-				}
-			}
-			.loading-row {
-				display: flex;
-				align-items: center;
-				gap: 1em;
-				margin-top: 2em;
-				justify-content: center;
-			}
-			#timer {
-				font-size: 1.1em;
-				color: #333;
-				min-width: 60px;
-			}
-		</style>
 
 		<script>
 			let loading = false;
@@ -80,16 +47,22 @@
 			window.addEventListener('DOMContentLoaded', function () {
 				const form = document.querySelector('.question-form');
 
-				if (form) {
-					form.addEventListener('submit', function () {
-						startLoading();
-					});
-					// Hide response on submit if still visible
-					const responseDiv = document.getElementById('response-block');
-					if (responseDiv)
-						responseDiv.style.display =
-							'{{ response is defined and response is not none }}' === 'True' ? '' : 'none';
+				if (!form) {
+					return;
 				}
+
+				form.addEventListener('submit', function () {
+					startLoading();
+				});
+				// Hide response on submit if still visible
+				const responseDiv = document.getElementById('response-block');
+
+				if (!responseDiv) {
+					return;
+				}
+
+				responseDiv.style.display =
+					'{{ response is defined and response is not none }}' === 'True' ? '' : 'none';
 			});
 		</script>
 	</head>
@@ -98,25 +71,38 @@
 			<h1>Assist AI</h1>
 
 			<div class="documents-info">
-				This model answers questions based on your documents manage them here:
+				Assist AI runs locally and answers your questions using the provided documents (in Markdown format) and
+				your chat history. With efficient RAG, the model can use a large number of notes as context. You can
+				also ask questions without RAG for faster responses. To manage your documents, click the button below.
+				To clear the chat history, type "clear".
 				<a class="documents-info-button" href="/manage">Manage Documents</a>
 			</div>
 
 			<form method="post" class="question-form">
-				<input
-					type="text"
-					name="question"
-					placeholder="Enter your question"
-					value="{{ question or '' }}"
-					required
-				/>
-				<button type="submit">Ask</button>
+				<div class="question-form-row">
+					<input
+						type="text"
+						name="question"
+						placeholder="Enter your question"
+						value="{{ question or '' }}"
+						required
+					/>
+					<button class="question-form-submit" type="submit">Ask</button>
+					<button class="question-form-clear" type="submit" name="clear" value="true">Clear</button>
+				</div>
+
+				<div class="question-form-row">
+					<label style="margin-top: 1em; display: inline-block">
+						<input type="checkbox" name="use_rag" value="on" {% if use_rag %}checked{% endif %} />
+						Provide answer based on documents
+					</label>
+				</div>
 			</form>
 
 			<div id="loading-row" class="loading-row" style="display: none">
 				<div class="loader"></div>
 				<span>Loading...</span>
-				<span id="timer">0.0s</span>
+				<span id="timer" class="loading-timer">0.0s</span>
 			</div>
 
 			{% if response %}
@@ -125,11 +111,23 @@
 			</script>
 
 			<div class="response" id="response-block">
-				<h2>Response:</h2>
+				<h2>Response {% if use_rag %}(RAG){% endif %}:</h2>
 				<div class="response-scroll">{{ response }}</div>
 			</div>
 			{% else %}
 			<div id="response-block" style="display: none"></div>
+			{% endif %} {% if history %}
+			<div class="chat-history">
+				<h2>Chat History</h2>
+				<div class="chat-history-scroll">
+					{% for entry in history %}
+					<div class="chat-history-entry">
+						<strong>You:</strong> {{ entry[0] }}<br />
+						<strong>AI:</strong> {{ entry[1] }}
+					</div>
+					{% endfor %}
+				</div>
+			</div>
 			{% endif %}
 		</div>
 	</body>

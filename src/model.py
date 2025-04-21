@@ -85,7 +85,7 @@ class CustomDocumentModel:
             )
 
         # Load documents
-        self.__load_documents()
+        self.load_documents()
         if not self.silent:
             print(
                 f"[custom-chat-model] Documents loaded ({self.__get_run_time(start_time)})"
@@ -97,7 +97,7 @@ class CustomDocumentModel:
         )
 
         # Store documents in database for fast search in all documents for model
-        self.__load_vector_store(force=self.refresh)
+        self.load_vector_store(force=self.refresh)
         if not self.silent:
             print(
                 f"[custom-chat-model] Vector store initiated ({self.__get_run_time(start_time)})"
@@ -121,7 +121,7 @@ class CustomDocumentModel:
     def __get_run_time(self, start_time):
         return time.time() - start_time
 
-    def __load_documents(self):
+    def load_documents(self):
         files_path = os.path.join(os.path.dirname(__file__), "data", "files")
         loader = DirectoryLoader(
             path=files_path,
@@ -140,7 +140,7 @@ class CustomDocumentModel:
 
         return self.documents
 
-    def __load_vector_store(self, force=False):
+    def load_vector_store(self, force=False):
         # Check if vectorstore was created at least one hour ago
         vector_store_path = os.path.join(
             os.path.dirname(__file__), "data", "vectorstore"
@@ -219,11 +219,11 @@ class CustomDocumentModel:
         return True
 
     # Create function to call the chain
-    def invoke(self, message, use_rag=True):
+    def invoke(self, message, use_rag=True, clear=False):
         with open(self.log_file, "a") as f:
             f.write(f"message: {message}\n")
 
-        if message == "clear":
+        if message == "clear" or clear:
             self.history = []
             return "Chat history cleared"
 
@@ -244,6 +244,8 @@ class CustomDocumentModel:
                     "chat_history": history_context,
                 }
             )
+
+            answer = response["answer"]
         else:
             history_context = (
                 "\n".join([f"Question: {h[0]}\nAnswer: {h[1]}" for h in self.history])
@@ -251,14 +253,14 @@ class CustomDocumentModel:
                 else ""
             )
 
-            response = self.documents_chain.invoke(
+            response = self.default_chain.invoke(
                 {
                     "input": message,
                     "chat_history": history_context,
                 }
             )
 
-        answer = response["answer"]
+            answer = response.content
 
         with open(self.log_file, "a") as f:
             f.write(f"time: {time.time() - start_time}s\n")

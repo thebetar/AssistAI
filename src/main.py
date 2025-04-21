@@ -28,17 +28,46 @@ class QuestionQuery(BaseModel):
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
+    chat_history = getattr(assist_model, "history", None)
+
     return templates.TemplateResponse(
-        "template.html", {"request": request, "response": None}
+        "template.html", {"request": request, "response": None, "history": chat_history}
     )
 
 
 @app.post("/", response_class=HTMLResponse)
-async def ask_question(request: Request, question: str = Form(...)):
-    response = assist_model.invoke(question)
+async def ask_question(
+    request: Request,
+    question: str = Form(""),
+    use_rag: str = Form("off"),
+    clear: str = Form("false"),
+):
+    print("Form values:", question, use_rag, clear)
+
+    if question == "":
+        chat_history = getattr(assist_model, "history", None)
+        return templates.TemplateResponse(
+            "template.html",
+            {"request": request, "history": chat_history},
+        )
+
+    use_rag_bool = use_rag == "on"
+    clear_bool = clear == "true"
+
+    response = assist_model.invoke(question, use_rag=use_rag_bool, clear=clear_bool)
+    chat_history = getattr(assist_model, "history", None)
+
+    print("history:", chat_history)
+
     return templates.TemplateResponse(
         "template.html",
-        {"request": request, "response": response, "question": question},
+        {
+            "request": request,
+            "response": response,
+            "question": question,
+            "history": chat_history,
+            "use_rag": use_rag_bool,
+        },
     )
 
 
@@ -54,6 +83,7 @@ async def question(query: QuestionQuery):
 @app.get("/manage", response_class=HTMLResponse)
 async def manage_files(request: Request, updated: str = None):
     files = []
+
     if os.path.exists(DATA_FILES_DIR):
         files = [
             f
@@ -79,9 +109,9 @@ async def upload_file(request: Request, files: List[UploadFile] = File(...)):
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-    # Directly call the mangled private methods (Python name mangling)
-    assist_model._CustomDocumentModel__load_documents()
-    assist_model._CustomDocumentModel__load_vector_store(force=True)
+    # Reload the vector store based on the new doucments
+    assist_model.load_documents()
+    assist_model.load_vector_store(force=True)
 
     # Redirect with updated message
     return RedirectResponse(url="/manage?updated=1", status_code=303)
@@ -100,10 +130,13 @@ async def download_file(filename: str):
 @app.get("/manage/view/{filename}", response_class=HTMLResponse)
 async def view_file(filename: str):
     file_path = os.path.join(DATA_FILES_DIR, filename)
+
     if not os.path.exists(file_path):
         return HTMLResponse("File not found", status_code=404)
+
     with open(file_path, "r", encoding="utf-8") as f:
         content = f.read()
+
     # Render a template with the raw markdown, let JS (marked) render it
     return templates.TemplateResponse(
         "view_file.html",
@@ -118,8 +151,8 @@ async def delete_file(filename: str):
     if os.path.exists(file_path):
         os.remove(file_path)
 
-    # Directly call the mangled private methods (Python name mangling)
-    assist_model._CustomDocumentModel__load_documents()
-    assist_model._CustomDocumentModel__load_vector_store(force=True)
+    # Reload the vector store based on the new documetns
+    assist_model.load_documents()
+    assist_model.load_vector_store(force=True)
 
     return RedirectResponse(url="/manage?updated=1", status_code=303)
