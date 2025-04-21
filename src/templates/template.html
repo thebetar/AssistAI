@@ -4,10 +4,11 @@
 		<meta charset="UTF-8" />
 		<title>Assist AI Client</title>
 		<link rel="stylesheet" href="/static/style.css" />
+		<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
 		<script>
 			window.__INITIAL_STATE__ = {
-				history: {% if history %}{{ history|tojson }}{% else %}[]{% endif %}
+				history: {% if history %}{{ history | tojson }}{% else %}[]{% endif %},
 			};
 		</script>
 	</head>
@@ -61,7 +62,9 @@
 					});
 					const data = await res.json();
 
-					setResponse(data.response || '');
+					const parsedResponse = marked.parse(data.response || '');
+
+					setResponse(parsedResponse);
 					setHistory(data.history.reverse() || []);
 					stopLoading();
 				};
@@ -87,6 +90,19 @@
 					stopLoading();
 				};
 
+				const renderHistoryEntry = entry => {
+					const user = marked.parse(entry[0] || '');
+					const ai = marked.parse(entry[1] || '');
+					return html`
+						<div class="chat-history-entry">
+							<strong>You:</strong>
+							<div class="chat-history-markdown" innerHTML=${user}></div>
+							<strong>AI:</strong>
+							<div class="chat-history-markdown" innerHTML=${ai}></div>
+						</div>
+					`;
+				};
+
 				return html`
 					<div class="container">
 						<a href="/settings" class="settings-gear" title="Settings">
@@ -97,8 +113,8 @@
 								stroke-width="2"
 								stroke-linecap="round"
 								stroke-linejoin="round"
-								width="28"
-								height="28"
+								width="32"
+								height="32"
 							>
 								<circle cx="12" cy="12" r="3" />
 								<path
@@ -164,8 +180,8 @@
 										response()
 											? html`
 													<div class="response" id="response-block">
-														<h2>Response ${useRag() ? '(RAG)' : ''}:</h2>
-														<div class="response-scroll">${response()}</div>
+														<h2>Response:</h2>
+														<div class="response-scroll" innerHTML=${response()}></div>
 													</div>
 											  `
 											: null}
@@ -174,16 +190,7 @@
 								? html`
 										<div class="chat-history">
 											<h2>Chat History</h2>
-											<div class="chat-history-scroll">
-												${history().map(
-													entry => html`
-														<div class="chat-history-entry">
-															<strong>You:</strong> ${entry[0]}<br />
-															<strong>AI:</strong> ${entry[1]}
-														</div>
-													`,
-												)}
-											</div>
+											<div class="chat-history-scroll">${history().map(renderHistoryEntry)}</div>
 										</div>
 								  `
 								: null}
