@@ -27,8 +27,9 @@
 	<body>
 		<div class="view-file-header">
 			<h2 style="margin: 0">{{ filename }}</h2>
-			<a href="/manage" class="documents-info-button">Back</a>
+			<a href="/manage" class="btn documents-info-button">Back</a>
 		</div>
+
 		<div id="markdown" class="markdown-body"></div>
 		<script>
 			let raw = '{{ content|tojson }}';

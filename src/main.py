@@ -3,10 +3,13 @@ import os
 import shutil
 from datetime import datetime
 from typing import List
-from fastapi import FastAPI, Request, Form, UploadFile, File
+from fastapi import FastAPI, Request, Form, UploadFile, File, Body
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+import hashlib
+import requests
+from bs4 import BeautifulSoup
 
 from model import CustomDocumentModel
 
@@ -31,6 +34,7 @@ assist_model = CustomDocumentModel(
 )
 
 DATA_FILES_DIR = os.path.join(os.path.dirname(__file__), "data", "files")
+URLS_INDEX_PATH = os.path.join(DATA_FILES_DIR, "urls.json")
 
 
 def get_pending_status():
@@ -50,6 +54,27 @@ def get_pending_status():
         return True
 
     return False
+
+
+def load_urls_index():
+    if os.path.exists(URLS_INDEX_PATH):
+        with open(URLS_INDEX_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    return []
+
+
+def save_urls_index(urls):
+    with open(URLS_INDEX_PATH, "w", encoding="utf-8") as f:
+        json.dump(urls, f, indent=2)
+
+
+def url_to_id(url):
+    return hashlib.sha256(url.encode("utf-8")).hexdigest()
+
+
+def url_txt_filename(url_id):
+    return f"url_{url_id}.txt"
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -224,6 +249,69 @@ async def reload_model():
         updated_files.sort()
 
     return {"files": updated_files}
+
+
+@app.get("/manage/urls", response_class=JSONResponse)
+async def get_urls():
+    urls = load_urls_index()
+    return {"urls": urls}
+
+
+@app.post("/manage/add_url", response_class=JSONResponse)
+async def add_url(data: dict = Body(...)):
+    url = data.get("url", "").strip()
+
+    if not url:
+        return JSONResponse({"error": "No URL provided"}, status_code=400)
+
+    urls = load_urls_index()
+    url_id = url_to_id(url)
+
+    # Prevent duplicates
+    if any(u["id"] == url_id for u in urls):
+        return {"urls": urls}
+
+    # Fetch and parse
+    try:
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.text, "html.parser")
+        text = soup.get_text(separator="\n", strip=True)
+    except Exception as e:
+        return JSONResponse({"error": f"Failed to fetch URL: {e}"}, status_code=400)
+
+    # Save text file
+    os.makedirs(DATA_FILES_DIR, exist_ok=True)
+
+    txt_filename = url_txt_filename(url_id)
+    txt_path = os.path.join(DATA_FILES_DIR, txt_filename)
+
+    with open(txt_path, "w", encoding="utf-8") as f:
+        f.write(text)
+
+    # Add to index
+    urls.append({"id": url_id, "url": url, "filename": txt_filename})
+    save_urls_index(urls)
+
+    # Update last document change time
+    assist_model.last_document_change = datetime.now()
+
+    return {"urls": urls}
+
+
+@app.delete("/manage/delete_url/{url_id}", response_class=JSONResponse)
+async def delete_url(url_id: str):
+    urls = load_urls_index()
+    urls_new = [u for u in urls if u["id"] != url_id]
+    # Remove file if present
+    for u in urls:
+        if u["id"] == url_id:
+            txt_path = os.path.join(DATA_FILES_DIR, u.get("filename", ""))
+            if os.path.exists(txt_path):
+                os.remove(txt_path)
+    save_urls_index(urls_new)
+    assist_model.last_document_change = datetime.now()
+    return {"urls": urls_new}
 
 
 @app.get("/settings", response_class=HTMLResponse)

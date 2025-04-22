@@ -52,7 +52,7 @@
 
 					setChatModel(data.chat_model || DEFAULT_CHAT_MODEL);
 					setEmbeddingModel(data.embedding_model || DEFAULT_EMBEDDING_MODEL);
-					setTemperature(data.temperature ?? DEFAULT_TEMPERATURE);
+					setTemperature(data.temperature || DEFAULT_TEMPERATURE);
 				};
 
 				const startLoading = () => {
@@ -145,7 +145,7 @@
 									max="2"
 									step="0.01"
 									class="form-input"
-									value=${temperature()}
+									value=${() => temperature()}
 									onInput=${e => setTemperature(Number(e.target.value))}
 									disabled=${() => loading()}
 								/>

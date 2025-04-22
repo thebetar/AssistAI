@@ -68,6 +68,19 @@ body {
 	background: #5a6268;
 }
 
+.secondary-btn-outline {
+	background: transparent;
+	color: #6c757d;
+	border: 1px solid #6c757d;
+	font-size: 16px;
+	cursor: pointer;
+}
+
+.secondary-btn-outline:hover {
+	background: #6c757d;
+	color: #fff;
+}
+
 .save-note-btn {
 	background: #28a745;
 	color: #fff;

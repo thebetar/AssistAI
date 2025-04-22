@@ -19,12 +19,20 @@
 			import html from 'https://esm.sh/solid-js@1.8.1/html';
 
 			import { PendingNotification } from '/static/pending-notification.js';
+			import { SettingsGear } from '/static/settings-gear.js';
 
 			const App = () => {
-				const [files, setFiles] = createSignal([]);
-				const [filter, setFilter] = createSignal('');
-
 				const [pending, setPending] = createSignal(window.__INITIAL_STATE__.pending || false);
+
+				const [files, setFiles] = createSignal([]);
+				const [fileFilter, setFileFilter] = createSignal('');
+				const [showAllFiles, setShowAllFiles] = createSignal(false);
+
+				// --- URL sources state ---
+				const [urls, setUrls] = createSignal([]);
+				const [urlInput, setUrlInput] = createSignal('');
+				const [urlFilter, setUrlFilter] = createSignal('');
+				const [showAllUrls, setShowAllUrls] = createSignal(false);
 
 				const fetchFiles = async () => {
 					const res = await fetch('/manage/files');
@@ -32,7 +40,16 @@
 					setFiles(data.files || []);
 				};
 
-				onMount(fetchFiles);
+				const fetchUrls = async () => {
+					const res = await fetch('/manage/urls');
+					const data = await res.json();
+					setUrls(data.urls || []);
+				};
+
+				onMount(() => {
+					fetchFiles();
+					fetchUrls();
+				});
 
 				const handleUpload = async e => {
 					e.preventDefault();
@@ -64,34 +81,46 @@
 					setPending(true);
 				};
 
+				// --- Add URL handler ---
+				const handleAddUrl = async e => {
+					e.preventDefault();
+					const url = urlInput().trim();
+					if (!url) return;
+					const res = await fetch('/manage/add_url', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ url }),
+					});
+					const data = await res.json();
+					setUrls(data.urls || []);
+					setPending(true);
+					setUrlInput('');
+				};
+
+				// --- Delete URL handler ---
+				const handleDeleteUrl = async (e, urlId) => {
+					e.preventDefault();
+					const res = await fetch(`/manage/delete_url/${encodeURIComponent(urlId)}`, {
+						method: 'DELETE',
+					});
+					const data = await res.json();
+					setUrls(data.urls || []);
+					setPending(true);
+				};
+
 				const filteredFiles = () =>
-					files().filter(f => f.toLowerCase().includes(filter().trim().toLowerCase()));
+					files().filter(f => f.toLowerCase().includes(fileFilter().trim().toLowerCase()));
+
+				const filteredUrls = () =>
+					urls().filter(u => u.url.toLowerCase().includes(urlFilter().trim().toLowerCase()));
 
 				return html`
 					${() => (pending() ? PendingNotification({ setPending }) : null)}
 
 					<div class="container">
-						<div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 1em;">
-							<a href="/" class="settings-gear" title="Back to Chat" style="margin-right: 0;">
-								<svg
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="#333"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									width="32"
-									height="32"
-								>
-									<circle cx="12" cy="12" r="3" />
-									<path
-										d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09A1.65 1.65 0 0 0 9 4.09V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
-									/>
-								</svg>
-							</a>
-						</div>
+						${SettingsGear()}
 
-						<h1>Manage Documents</h1>
+						<h1>Manage Sources</h1>
 
 						<div class="documents-info">
 							These documents are used as the knowledge base for answering your questions.
@@ -126,6 +155,117 @@
 							</a>
 						</div>
 
+						<!-- URL Sources Section -->
+						<h2>URL Sources</h2>
+
+						<form class="upload-form" onSubmit=${handleAddUrl} style="margin-bottom: 1em;">
+							<input
+								type="url"
+								placeholder="Add URL (https://...)"
+								class="upload-input"
+								required
+								value=${urlInput()}
+								onInput=${e => setUrlInput(e.target.value)}
+								style="width: 70%; margin-right: 8px;"
+							/>
+							<button type="submit" class="btn upload-btn">Add URL</button>
+						</form>
+
+						<div style="display: flex; margin-bottom: 0.5em;">
+							<input
+								type="text"
+								id="url-filter"
+								placeholder="Filter URLs..."
+								class="form-input"
+								style="flex: 1;"
+								autocomplete="off"
+								value=${urlFilter()}
+								onInput=${e => setUrlFilter(e.target.value)}
+							/>
+						</div>
+
+						<ul class="manage-list">
+							${() => {
+								const urlsToShow = showAllUrls() ? filteredUrls() : filteredUrls().slice(0, 3);
+
+								return urlsToShow.length > 0
+									? urlsToShow.map(
+											urlObj =>
+												html`
+													<li class="manage-list-item">
+														<a
+															href="${urlObj.url}"
+															class="manage-filename"
+															style="word-break: break-all;"
+															target="_blank"
+														>
+															${urlObj.url}
+														</a>
+														<span class="manage-actions">
+															<form
+																style="width: 100%; margin: 0; display: inline"
+																onSubmit=${e => handleDeleteUrl(e, urlObj.id)}
+															>
+																<button
+																	type="submit"
+																	class="manage-action-btn manage-delete-btn"
+																>
+																	<svg
+																		width="14px"
+																		height="14px"
+																		viewBox="0 0 24 24"
+																		fill="none"
+																		xmlns="http://www.w3.org/2000/svg"
+																		style="vertical-align: middle; margin-right: 4px;"
+																	>
+																		<path
+																			d="M3 6H5H21"
+																			stroke="currentColor"
+																			stroke-width="2"
+																			stroke-linecap="round"
+																			stroke-linejoin="round"
+																		/>
+																		<path
+																			d="M8 6V4C8 2.89543 8.89543 2 10 2H14C15.1046 2 16 2.89543 16 4V6M19 6V20C19 21.1046 18.1046 22 17 22H7C5.89543 22 5 21.1046 5 20V6M10 11V17M14 11V17"
+																			stroke="currentColor"
+																			stroke-width="2"
+																			stroke-linecap="round"
+																			stroke-linejoin="round"
+																		/>
+																	</svg>
+																	Delete
+																</button>
+															</form>
+														</span>
+													</li>
+												`,
+									  )
+									: html`<li style="color: #888; padding: 8px">No URLs added.</li>`;
+							}}
+						</ul>
+
+						${() =>
+							filteredUrls().length > 3
+								? html`
+										<div
+											style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 1em;"
+										>
+											Only the first 3 URLs are shown from the search result.
+											<button
+												type="button"
+												class="btn secondary-btn-outline"
+												onClick=${() => setShowAllUrls(v => !v)}
+											>
+												${showAllUrls() ? 'Show less' : 'Show all'}
+											</button>
+										</div>
+								  `
+								: null}
+						<!-- End URL Sources Section -->
+
+						<!-- Files Section -->
+						<h2>Files</h2>
+
 						<form
 							action="/manage/upload"
 							method="post"
@@ -156,8 +296,6 @@
 							</button>
 						</form>
 
-						<h2>Files</h2>
-
 						<div style="display: flex;">
 							<input
 								type="text"
@@ -166,15 +304,16 @@
 								class="form-input"
 								style="flex: 1;"
 								autocomplete="off"
-								value=${() => filter()}
-								onInput=${e => setFilter(e.target.value)}
+								value=${() => fileFilter()}
+								onInput=${e => setFileFilter(e.target.value)}
 							/>
 						</div>
 
 						<ul class="manage-list">
-							${() =>
-								filteredFiles().length > 0
-									? filteredFiles().map(
+							${() => {
+								const filesToShow = showAllFiles() ? filteredFiles() : filteredFiles().slice(0, 3);
+								return filesToShow.length > 0
+									? filesToShow.map(
 											file =>
 												html`
 													<li class="manage-list-item">
@@ -283,8 +422,28 @@
 													</li>
 												`,
 									  )
-									: html`<li style="color: #888; padding: 8px">No files found.</li>`}
+									: html`<li style="color: #888; padding: 8px">No files found.</li>`;
+							}}
 						</ul>
+
+						${() =>
+							filteredFiles().length > 3
+								? html`
+										<div
+											style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 1em;"
+										>
+											Only the first 3 files are shown from the search result.
+											<button
+												type="button"
+												class="btn secondary-btn-outline"
+												onClick=${() => setShowAllFiles(v => !v)}
+											>
+												${showAllFiles() ? 'Show less' : 'Show all'}
+											</button>
+										</div>
+								  `
+								: null}
+						<!-- End Files Section -->
 					</div>
 				`;
 			};
