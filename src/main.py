@@ -1,6 +1,7 @@
 import json
 import os
 import shutil
+from datetime import datetime
 from typing import List
 from fastapi import FastAPI, Request, Form, UploadFile, File
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
@@ -32,14 +33,32 @@ assist_model = CustomDocumentModel(
 DATA_FILES_DIR = os.path.join(os.path.dirname(__file__), "data", "files")
 
 
+def get_pending_status():
+    # Check if pending documents
+    last_document_change = getattr(assist_model, "last_document_change", None)
+    last_updated = getattr(assist_model, "last_updated", None)
+
+    print(last_document_change, last_updated)
+
+    if not last_document_change and not last_updated:
+        return False
+
+    if last_document_change and not last_updated:
+        return True
+
+    if last_document_change > last_updated:
+        return True
+
+    return False
+
+
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     history = getattr(assist_model, "history", None)
-
-    print("History:", history)
+    pending = get_pending_status()
 
     return templates.TemplateResponse(
-        "template.html", {"request": request, "history": history}
+        "template.html", {"request": request, "history": history, "pending": pending}
     )
 
 
@@ -69,10 +88,12 @@ async def ask_question(
 
 @app.get("/manage", response_class=HTMLResponse)
 async def manage_files(request: Request, updated: str = None):
+    pending = get_pending_status()
+
     # Only render the template, no file list in context
     return templates.TemplateResponse(
         "manage.html",
-        {"request": request, "updated": updated},
+        {"request": request, "updated": updated, "pending": pending},
     )
 
 
@@ -102,9 +123,8 @@ async def upload_file(request: Request, files: List[UploadFile] = File(...)):
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-    # Reload the vector store based on the new doucments
-    assist_model.load_documents()
-    assist_model.load_vector_store(force=True)
+    # Update last document change time in state
+    assist_model.last_document_change = datetime.now()
 
     # Return updated file list as JSON
     updated_files = []
@@ -127,9 +147,8 @@ async def upload_note(filename: str = Form(...), content: str = Form(...)):
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(content)
 
-    # Reload the vector store based on the new documents
-    assist_model.load_documents()
-    assist_model.load_vector_store(force=True)
+    # Update last document change time in state
+    assist_model.last_document_change = datetime.now()
 
     # Optionally reload vector store if needed
     return {"success": True, "filename": filename}
@@ -169,9 +188,30 @@ async def delete_file(filename: str):
     if os.path.exists(file_path):
         os.remove(file_path)
 
-    # Reload the vector store based on the new documetns
+    # Update last document change time in state
+    assist_model.last_document_change = datetime.now()
+
+    # Return updated file list as JSON
+    updated_files = []
+    if os.path.exists(DATA_FILES_DIR):
+        updated_files = [
+            f
+            for f in os.listdir(DATA_FILES_DIR)
+            if os.path.isfile(os.path.join(DATA_FILES_DIR, f))
+        ]
+        updated_files.sort()
+
+    return {"files": updated_files}
+
+
+@app.post("/manage/reload", response_class=JSONResponse)
+async def reload_model():
+    # Reload the vector store based on the new documents
     assist_model.load_documents()
     assist_model.load_vector_store(force=True)
+
+    # Update last updated in state
+    assist_model.last_updated = datetime.now()
 
     # Return updated file list as JSON
     updated_files = []
@@ -188,7 +228,11 @@ async def delete_file(filename: str):
 
 @app.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request):
-    return templates.TemplateResponse("settings.html", {"request": request})
+    pending = get_pending_status()
+
+    return templates.TemplateResponse(
+        "settings.html", {"request": request, "pending": pending}
+    )
 
 
 @app.get("/settings/get")

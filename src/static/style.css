@@ -237,15 +237,13 @@ h2 {
 .loading-row {
 	display: flex;
 	align-items: center;
-	gap: 1em;
-	margin: 1em 0;
+	gap: 4px;
+	margin: 0.5em 0;
 	justify-content: center;
 }
 
 .loading-timer {
 	font-size: 1.1em;
-	color: #333;
-	min-width: 60px;
 }
 
 .chat-history {
@@ -284,4 +282,19 @@ h2 {
 	justify-content: space-between;
 	gap: 1em;
 	margin-top: 1em;
+}
+
+.pending-notification {
+	background: #fff3cd;
+	color: #856404;
+	border: 1px solid #ffeeba;
+	padding: 12px;
+	border-radius: 6px;
+	margin-bottom: 16px;
+	text-align: center;
+	font-weight: bold;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1em;
 }

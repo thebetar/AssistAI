@@ -4,6 +4,13 @@
 		<meta charset="UTF-8" />
 		<title>Settings</title>
 		<link rel="stylesheet" href="/static/style.css" />
+
+		<script>
+			window.__INITIAL_STATE__ = {
+				pending: {% if pending %}true{% else %}false{% endif %}
+			};
+		</script>
+
 		<style>
 			.settings-row {
 				display: flex;
@@ -32,10 +39,10 @@
 				const [chatModel, setChatModel] = createSignal(DEFAULT_CHAT_MODEL);
 				const [embeddingModel, setEmbeddingModel] = createSignal(DEFAULT_EMBEDDING_MODEL);
 				const [temperature, setTemperature] = createSignal(DEFAULT_TEMPERATURE);
-
 				const [loading, setLoading] = createSignal(false);
 				const [timer, setTimer] = createSignal(0);
 				const [success, setSuccess] = createSignal(false);
+				const [pending, setPending] = createSignal(window.__INITIAL_STATE__.pending || false);
 
 				let timerInterval = null;
 
@@ -72,19 +79,25 @@
 
 				const handleSave = async e => {
 					e.preventDefault();
+
 					startLoading();
+
 					const formData = new FormData();
 					formData.append('chat_model', chatModel());
 					formData.append('embedding_model', embeddingModel());
 					formData.append('temperature', temperature());
+
 					await fetch('/settings/update', {
 						method: 'POST',
 						body: formData,
 					});
+
 					stopLoading();
 				};
 
 				return html`
+					${() => (pending() ? PendingNotification({ setPending }) : null)}
+
 					<div class="container">
 						<h1>Settings</h1>
 
@@ -141,7 +154,7 @@
 							<div class="button-row">
 								<button
 									type="button"
-									class="secondary-btn"
+									class="btn secondary-btn"
 									style="flex: 1;"
 									onClick=${() => (window.location.href = '/')}
 									disabled=${() => loading()}
@@ -149,7 +162,12 @@
 									Back
 								</button>
 
-								<button type="submit" class="primary-btn" style="flex: 1;" disabled=${() => loading()}>
+								<button
+									type="submit"
+									class="btn primary-btn"
+									style="flex: 1;"
+									disabled=${() => loading()}
+								>
 									Save
 								</button>
 							</div>
