@@ -1,5 +1,5 @@
 import { marked } from 'marked';
-import './NotePreview.css';
+import './MarkdownPreview.css';
 
 function NotePreview(props) {
 	return (

@@ -1,5 +1,5 @@
 import { createSignal, onMount } from 'solid-js';
-import NotePreview from '../components/NotePreview';
+import MarkdownPreview from '../components/MarkdownPreview';
 
 function NotesPage() {
 	const [notes, setNotes] = createSignal([]);
@@ -65,7 +65,7 @@ function NotesPage() {
 				{selectedNote() ? (
 					<>
 						<h1 class="text-2xl font-bold mb-4">{selectedNote()}</h1>
-						<NotePreview content={noteContent()} loading={loading} />
+						<MarkdownPreview content={noteContent()} loading={loading} />
 					</>
 				) : (
 					<p class="text-zinc-400">Select a note to view its content.</p>

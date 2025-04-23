@@ -266,6 +266,28 @@ async def get_urls():
     return {"urls": urls}
 
 
+url_cache = {}
+
+
+@app.get("/api/urls/{url_id}", response_class=PlainTextResponse)
+async def view_url(url_id: str):
+    urls = load_urls_index()
+    url = next((u for u in urls if u["id"] == url_id), None)
+
+    if not url:
+        return PlainTextResponse("URL not found", status_code=404)
+
+    txt_path = os.path.join(DATA_URLS_DIR, url.get("filename", ""))
+
+    if not os.path.exists(txt_path):
+        return PlainTextResponse("File not found", status_code=404)
+
+    with open(txt_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    return content
+
+
 @app.post("/api/urls", response_class=JSONResponse)
 async def add_url(data: dict = Body(...)):
     url = data.get("url", "").strip()
