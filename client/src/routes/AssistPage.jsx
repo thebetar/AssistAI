@@ -1,5 +1,6 @@
-import { createSignal, onCleanup, For, onMount } from 'solid-js';
+import { createSignal, onCleanup, For, onMount, useContext } from 'solid-js';
 import MarkdownPreview from '../components/MarkdownPreview';
+import { PendingContext } from '../App';
 
 function AssistPage() {
 	const [question, setQuestion] = createSignal('');
@@ -10,6 +11,8 @@ function AssistPage() {
 	const [loading, setLoading] = createSignal(false);
 	const [timer, setTimer] = createSignal(0);
 	const [saveSuccess, setSaveSuccess] = createSignal(false);
+
+	const fetchPending = useContext(PendingContext);
 
 	let timerInterval = null;
 
@@ -131,6 +134,8 @@ function AssistPage() {
 
 		setSaveSuccess(true);
 		setTimeout(() => setSaveSuccess(false), 5000);
+
+		fetchPending();
 	};
 
 	const renderHistoryEntry = entry => (
@@ -229,8 +234,9 @@ function AssistPage() {
 				/>
 				<button
 					type="button"
-					class="px-4 py-2 rounded bg-green-600 text-white font-semibold hover:bg-green-700 transition cursor-pointer"
+					class="px-4 py-2 rounded bg-green-600 text-white font-semibold hover:bg-green-700 transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
 					onClick={handleSaveNote}
+					disabled={history().length === 0 || loading()}
 				>
 					Save Conversation as Note
 				</button>

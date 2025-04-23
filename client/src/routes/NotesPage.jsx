@@ -1,4 +1,4 @@
-import { createSignal, onMount } from 'solid-js';
+import { createSignal, onMount, useContext } from 'solid-js';
 
 import PlusSvg from '../assets/svg/used/plus.svg';
 import TrashSvg from '../assets/svg/used/trash.svg';
@@ -6,6 +6,7 @@ import PencilSvg from '../assets/svg/used/pencil.svg';
 
 import MarkdownPreview from '../components/MarkdownPreview';
 import MarkdownEditor from '../components/MarkdownEditor';
+import { PendingContext } from '../App';
 
 function NotesPage() {
 	const [notes, setNotes] = createSignal([]);
@@ -19,6 +20,8 @@ function NotesPage() {
 	const [newNoteName, setNewNoteName] = createSignal('');
 	const [newNoteContent, setNewNoteContent] = createSignal('');
 	const [filter, setFilter] = createSignal('');
+
+	const checkPending = useContext(PendingContext);
 
 	async function fetchNotes(selected = null) {
 		try {
@@ -49,6 +52,7 @@ function NotesPage() {
 		setLoading(true);
 		setContent('');
 		setEditMode(false);
+
 		try {
 			const response = await fetch(`/api/files/${encodeURIComponent(note)}`);
 			if (!response.ok) throw new Error('Failed to fetch note content');
@@ -63,9 +67,13 @@ function NotesPage() {
 	async function deleteNote(note) {
 		if (!window.confirm(`Delete note "${note}"?`)) return;
 		setLoading(true);
+
 		await fetch(`/api/files/${encodeURIComponent(note)}`, { method: 'DELETE' });
 		await fetchNotes();
+
 		setLoading(false);
+
+		checkPending();
 	}
 
 	function startEdit() {
@@ -88,6 +96,8 @@ function NotesPage() {
 		setEditMode(false);
 		await fetchNotes(selectedNote());
 		setLoading(false);
+
+		checkPending();
 	}
 
 	function startAdd() {
@@ -116,6 +126,8 @@ function NotesPage() {
 		setAddMode(false);
 		await fetchNotes(newNoteName());
 		setLoading(false);
+
+		checkPending();
 	}
 
 	const filteredNotes = () => notes().filter(n => n.toLowerCase().includes(filter().toLowerCase()));

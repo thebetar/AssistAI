@@ -266,6 +266,10 @@ async def delete_file(filename: str):
         ]
         updated_files.sort()
 
+    # Clear file_cache if it exists
+    if filename in file_cache:
+        del file_cache[filename]
+
     return {"files": updated_files}
 
 
@@ -303,6 +307,9 @@ url_cache = {}
 
 @app.get("/api/urls/{url_id}", response_class=PlainTextResponse)
 async def view_url(url_id: str):
+    if url_id in url_cache:
+        return url_cache[url_id]
+
     urls = load_urls_index()
     url = next((u for u in urls if u["id"] == url_id), None)
 
@@ -316,6 +323,8 @@ async def view_url(url_id: str):
 
     with open(txt_path, "r", encoding="utf-8") as f:
         content = f.read()
+
+    url_cache[url_id] = content
 
     return content
 
@@ -359,6 +368,38 @@ async def add_url(data: dict = Body(...)):
     # Update last document change time
     assist_model.last_document_change = datetime.now()
 
+    return {"urls": urls, "success": True, "url_id": url_id}
+
+
+@app.put("/api/urls/{url_id}", response_class=JSONResponse)
+async def update_url(
+    url_id: str,
+    content: str = Form(...),
+):
+    urls = load_urls_index()
+    url = next((u for u in urls if u["id"] == url_id), None)
+
+    if not url:
+        return JSONResponse({"error": "URL not found"}, status_code=404)
+
+    filename = url.get("filename", "")
+
+    if not filename:
+        return JSONResponse({"error": "Filename not found"}, status_code=404)
+
+    url_path = os.path.join(DATA_URLS_DIR, filename)
+
+    if not os.path.exists(url_path):
+        return JSONResponse({"error": "File not found"}, status_code=404)
+
+    with open(url_path, "w", encoding="utf-8") as f:
+        f.write(content)
+
+    assist_model.last_document_change = datetime.now()
+
+    if url_id in url_cache:
+        del url_cache[url_id]
+
     return {"urls": urls}
 
 
@@ -366,14 +407,22 @@ async def add_url(data: dict = Body(...)):
 async def delete_url(url_id: str):
     urls = load_urls_index()
     urls_new = [u for u in urls if u["id"] != url_id]
+
     # Remove file if present
     for u in urls:
         if u["id"] == url_id:
             txt_path = os.path.join(DATA_URLS_DIR, u.get("filename", ""))
             if os.path.exists(txt_path):
                 os.remove(txt_path)
+
     save_urls_index(urls_new)
+
     assist_model.last_document_change = datetime.now()
+
+    # Clear cache if it exists
+    if url_id in url_cache:
+        del url_cache[url_id]
+
     return {"urls": urls_new}
 
 
