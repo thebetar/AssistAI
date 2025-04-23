@@ -10,8 +10,8 @@ from fastapi.responses import (
     JSONResponse,
     PlainTextResponse,
 )
-from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 import hashlib
 import requests
 from bs4 import BeautifulSoup
@@ -24,8 +24,9 @@ from model import (
 
 app = FastAPI()
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+# Serve static files from the 'client/assets' directory at the '/assets' path
+app.mount("/assets", StaticFiles(directory="client/assets"), name="assets")
+templates = Jinja2Templates(directory="client")
 
 # Load the config.json file
 config_path = os.path.join(os.path.dirname(__file__), "config.json")
@@ -83,11 +84,6 @@ def url_to_id(url):
 
 def url_txt_filename(url_id):
     return f"url_{url_id}.txt"
-
-
-@app.get("/", response_class=HTMLResponse)
-async def root(request: Request):
-    return templates.TemplateResponse("template.html", {"request": request})
 
 
 @app.get("/api/pending", response_class=JSONResponse)
@@ -224,6 +220,29 @@ async def upload_note(filename: str = Form(...), content: str = Form(...)):
         del file_cache[filename]
 
     # Optionally reload vector store if needed
+    return {"success": True, "filename": filename}
+
+
+@app.put("/api/files/{filename}", response_class=JSONResponse)
+async def update_file(
+    filename: str,
+    content: str = Form(...),
+):
+    file_path = os.path.join(DATA_FILES_DIR, filename)
+
+    if not os.path.exists(file_path):
+        return JSONResponse({"error": "File not found"}, status_code=404)
+
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(content)
+
+    # Update last document change time in state
+    assist_model.last_document_change = datetime.now()
+
+    # Clear file_cache if it exists
+    if filename in file_cache:
+        del file_cache[filename]
+
     return {"success": True, "filename": filename}
 
 
@@ -398,3 +417,13 @@ async def update_settings(
         "embedding_model": embedding_model,
         "temperature": temperature,
     }
+
+
+# Catch-all route for client-side routing (Solid.js)
+@app.get("/{full_path:path}", response_class=HTMLResponse)
+async def catch_all(request: Request, full_path: str):
+    # Only serve index.html for non-API, non-assets paths
+    if full_path.startswith("api/") or full_path.startswith("assets/"):
+        return PlainTextResponse("Not Found", status_code=404)
+
+    return templates.TemplateResponse("index.html", {"request": request})

@@ -156,9 +156,9 @@ function AssistPage() {
 						Notes
 					</a>{' '}
 					and{' '}
-					<span href="/web-sources" class="font-semibold text-blue-400 cursor-pointer">
+					<a href="/web-sources" class="font-semibold text-blue-400 cursor-pointer">
 						Web Sources
-					</span>{' '}
+					</a>{' '}
 					tabs on the left.
 				</p>
 			</div>

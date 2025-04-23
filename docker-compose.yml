@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
     assist-ai:
-        build: ./server/.
+        build: .
         container_name: assist-ai
         volumes:
             - ./server/src/data:/app/data
