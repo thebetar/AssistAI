@@ -1,4 +1,5 @@
 import { createSignal, onMount } from 'solid-js';
+import MarkdownPreview from '../components/MarkdownPreview';
 
 function WebSourcesPage() {
 	const [sources, setSources] = createSignal([]);
@@ -43,7 +44,8 @@ function WebSourcesPage() {
 		<div class="flex h-full min-h-screen">
 			{/* Sidebar for sources */}
 			<aside class="w-72 bg-zinc-800 border-r border-zinc-700 overflow-y-auto h-screen">
-				<h2 class="text-lg font-bold px-4 py-2 border-b border-zinc-700">Web Sources</h2>
+				<h2 class="text-xl font-bold px-4 py-5 border-b border-zinc-700">Web sources</h2>
+
 				<ul>
 					{sources().map(source => (
 						<li
@@ -62,10 +64,14 @@ function WebSourcesPage() {
 				{selected() ? (
 					<>
 						<h1 class="text-2xl font-bold mb-4 break-all">{selected().url}</h1>
+
 						{loading() ? (
-							<p>Loading...</p>
+							<div class="flex items-center gap-x-2">
+								<div class="loader" />
+								<span class="text-lg font-semibold">Loading...</span>
+							</div>
 						) : (
-							<pre class="whitespace-pre-wrap bg-zinc-900 p-4 rounded">{content()}</pre>
+							<MarkdownPreview content={content()} />
 						)}
 					</>
 				) : (

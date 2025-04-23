@@ -87,12 +87,25 @@ def url_txt_filename(url_id):
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
-    history = getattr(assist_model, "history", None)
-    pending = get_pending_status()
+    return templates.TemplateResponse("template.html", {"request": request})
 
-    return templates.TemplateResponse(
-        "template.html", {"request": request, "history": history, "pending": pending}
-    )
+
+@app.get("/api/pending", response_class=JSONResponse)
+async def pending_status():
+    pending = get_pending_status()
+    return {"pending": pending}
+
+
+@app.get("/api/history", response_class=JSONResponse)
+async def get_history():
+    # Get the chat history from the assist_model instance
+    chat_history = getattr(assist_model, "history", None)
+
+    if chat_history is None:
+        return JSONResponse({"error": "No chat history available"}, status_code=404)
+
+    # Return the chat history as JSON
+    return {"history": chat_history}
 
 
 @app.post("/api/question", response_class=JSONResponse)

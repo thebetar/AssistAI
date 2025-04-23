@@ -4,7 +4,7 @@ import MarkdownPreview from '../components/MarkdownPreview';
 function NotesPage() {
 	const [notes, setNotes] = createSignal([]);
 	const [selectedNote, setSelectedNote] = createSignal(null);
-	const [noteContent, setNoteContent] = createSignal('');
+	const [content, setContent] = createSignal('');
 	const [loading, setLoading] = createSignal(false);
 
 	async function fetchNotes() {
@@ -25,14 +25,14 @@ function NotesPage() {
 	async function selectNote(note) {
 		setSelectedNote(note);
 		setLoading(true);
-		setNoteContent('');
+		setContent('');
 		try {
 			const response = await fetch(`/api/files/${encodeURIComponent(note)}`);
 			if (!response.ok) throw new Error('Failed to fetch note content');
 			const text = await response.text();
-			setNoteContent(text);
+			setContent(text);
 		} catch (error) {
-			setNoteContent('Error loading note.');
+			setContent('Error loading note.');
 		}
 		setLoading(false);
 	}
@@ -45,7 +45,8 @@ function NotesPage() {
 		<div class="flex h-full min-h-screen">
 			{/* Sidebar for notes */}
 			<aside class="w-72 bg-zinc-800 border-r border-zinc-700 overflow-y-auto h-screen">
-				<h2 class="text-lg font-bold px-4 py-2 border-b border-zinc-700">Notes</h2>
+				<h2 class="text-xl font-bold px-4 py-5 border-b border-zinc-700">Notes</h2>
+
 				<ul>
 					{notes().map(note => (
 						<li
@@ -65,7 +66,15 @@ function NotesPage() {
 				{selectedNote() ? (
 					<>
 						<h1 class="text-2xl font-bold mb-4">{selectedNote()}</h1>
-						<MarkdownPreview content={noteContent()} loading={loading} />
+
+						{loading() ? (
+							<div class="flex items-center gap-x-2">
+								<div class="loader" />
+								<span class="text-lg font-semibold">Loading...</span>
+							</div>
+						) : (
+							<MarkdownPreview content={content()} />
+						)}
 					</>
 				) : (
 					<p class="text-zinc-400">Select a note to view its content.</p>
