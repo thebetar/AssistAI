@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title>View: {{ filename }}</title>
+		<link rel="stylesheet" href="/static/style.css" />
+		<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+		<style>
+			.markdown-body {
+				background: #fff;
+				padding: 2em;
+				border-radius: 8px;
+				box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+				max-width: 700px;
+				margin: 2em auto;
+				font-size: 1.1em;
+			}
+			.view-file-header {
+				max-width: 700px;
+				margin: 2em auto 0 auto;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="view-file-header">
+			<h2 style="margin: 0">{{ filename }}</h2>
+		</div>
+
+		<a href="/manage" class="btn documents-info-button">Back</a>
+
+		<div id="markdown" class="markdown-body"></div>
+		<script>
+			let raw = '{{ content|tojson }}';
+
+			// Remove leading/trailing double quote
+			if (raw.startsWith('"') && raw.endsWith('"')) {
+				raw = raw.slice(1, -1);
+			}
+
+			document.getElementById('markdown').innerHTML = marked.parse(raw);
+		</script>
+	</body>
+</html>

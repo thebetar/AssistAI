@@ -1,0 +1,108 @@
+.markdown-preview {
+	font-size: 1rem;
+	line-height: 1.7;
+	color: #f4f4f5;
+}
+
+.markdown-preview table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 1.5em 0;
+	background: #18181b;
+}
+
+.markdown-preview th,
+.markdown-preview td {
+	border: 1px solid #3f3f46; /* zinc-700 */
+	padding: 0.75em 1em;
+	text-align: left;
+}
+
+.markdown-preview th {
+	background: #27272a; /* zinc-800 */
+	font-weight: 600;
+}
+
+.markdown-preview tr:nth-child(even) {
+	background: #23232a; /* slightly lighter for zebra striping */
+}
+
+.markdown-preview ul,
+.markdown-preview ol {
+	padding-left: 2em;
+	margin: 1em 0;
+}
+
+.markdown-preview li {
+	margin-bottom: 0.25em;
+}
+
+.markdown-preview blockquote {
+	border-left: 4px solid #52525b; /* zinc-600 */
+	background: #18181b;
+	padding: 0.5em 1em;
+	margin: 1em 0;
+	color: #a1a1aa;
+	font-style: italic;
+}
+
+.markdown-preview pre {
+	background: #18181b;
+	color: #f4f4f5;
+	padding: 1em;
+	border-radius: 0.5em;
+	overflow-x: auto;
+	margin: 1em 0;
+}
+
+.markdown-preview code {
+	background: #23232a;
+	color: #f4f4f5;
+	padding: 0.2em 0.4em;
+	border-radius: 0.3em;
+	font-size: 0.95em;
+}
+
+.markdown-preview h1,
+.markdown-preview h2,
+.markdown-preview h3,
+.markdown-preview h4,
+.markdown-preview h5,
+.markdown-preview h6 {
+	font-weight: 700;
+	margin-top: 1.5em;
+	margin-bottom: 0.5em;
+	color: #fafafa;
+}
+
+.markdown-preview h1 {
+	font-size: 2em;
+	border-bottom: 2px solid #3f3f46;
+	padding-bottom: 0.2em;
+}
+.markdown-preview h2 {
+	font-size: 1.5em;
+	border-bottom: 1px solid #3f3f46;
+	padding-bottom: 0.15em;
+}
+.markdown-preview h3 {
+	font-size: 1.25em;
+}
+.markdown-preview h4 {
+	font-size: 1.1em;
+}
+.markdown-preview h5 {
+	font-size: 1em;
+}
+.markdown-preview h6 {
+	font-size: 0.95em;
+}
+
+.markdown-preview a {
+	color: #60a5fa; /* blue-400 */
+	text-decoration: underline;
+	transition: color 0.2s;
+}
+.markdown-preview a:hover {
+	color: #3b82f6; /* blue-500 */
+}
