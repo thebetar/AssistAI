@@ -18,6 +18,8 @@ function NotesPreview({ addMode, setAddMode, fetchNotes, selectedNote, setSelect
 	const [tagInput, setTagInput] = createSignal('');
 
 	async function addTag(note, tag) {
+		setLoading(true);
+
 		if (!tag.trim()) {
 			return;
 		}
@@ -32,7 +34,6 @@ function NotesPreview({ addMode, setAddMode, fetchNotes, selectedNote, setSelect
 		note.tags = [...note.tags, newTag];
 		setTagInput('');
 
-		setLoading(true);
 		await fetchNotes(note);
 		setLoading(false);
 	}
@@ -106,7 +107,12 @@ function NotesPreview({ addMode, setAddMode, fetchNotes, selectedNote, setSelect
 		formData.append('filename', newNoteName());
 		formData.append('content', newNoteContent());
 
-		await fetch('/api/files/note', { method: 'POST', body: formData });
+		const res = await fetch('/api/files', { method: 'POST', body: formData });
+
+		if (!res.ok) {
+			setLoading(false);
+			return;
+		}
 
 		setAddMode(false);
 		await fetchNotes(newNoteName());

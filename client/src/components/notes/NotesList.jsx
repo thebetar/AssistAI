@@ -63,7 +63,7 @@ function NotesList({ notes = [], selectedNote, setSelectedNote, setAddMode }) {
 						}`}
 						onClick={() => setSelectedNote(note)}
 					>
-						<div>
+						<div class="overflow-hidden w-full">
 							<div class="truncate">{note.name}</div>
 
 							<div class="italic text-sm text-zinc-400">{getPreviewDescription(note.content)}</div>

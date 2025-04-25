@@ -6,7 +6,6 @@ import './index.css';
 import App from './App';
 import AssistPage from './routes/AssistPage';
 import NotesPage from './routes/NotesPage';
-import WebSourcesPage from './routes/WebSourcesPage';
 import SettingsPage from './routes/SettingsPage';
 import RedirectPage from './routes/RedirectPage';
 
@@ -23,7 +22,6 @@ render(
 		<Router root={App}>
 			<Route path="/assist" component={AssistPage} />
 			<Route path="/notes" component={NotesPage} />
-			<Route path="/web-sources" component={WebSourcesPage} />
 			<Route path="/settings" component={SettingsPage} />
 			<Route path="*" component={RedirectPage} />
 		</Router>

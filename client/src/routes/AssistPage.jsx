@@ -123,7 +123,7 @@ function AssistPage() {
 		formData.append('filename', filename);
 		formData.append('content', note);
 
-		const res = await fetch('/api/files/note', {
+		const res = await fetch('/api/files', {
 			method: 'POST',
 			body: formData,
 		});

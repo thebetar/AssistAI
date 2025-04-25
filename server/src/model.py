@@ -14,10 +14,9 @@ from langchain_community.vectorstores.faiss import FAISS as FaissStore
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 DATA_FILES_DIR = os.path.join(DATA_DIR, "files")
-DATA_URLS_DIR = os.path.join(DATA_DIR, "urls")
 
 
-class CustomDocumentModel:
+class CustomDocumentChatModel:
     def __init__(
         self,
         chat_model="gemma3:1b",
@@ -144,15 +143,6 @@ class CustomDocumentModel:
             load_hidden=False,
         )
         self.documents = loader.load()
-
-        # Load all urls
-        loader = DirectoryLoader(
-            path=DATA_URLS_DIR,
-            loader_cls=TextLoader,
-            recursive=True,
-            load_hidden=False,
-        )
-        self.documents += loader.load()
 
         # Split documents for smaller context window
         splitter = RecursiveCharacterTextSplitter(
@@ -301,5 +291,5 @@ class CustomDocumentModel:
 
 
 if __name__ == "__main__":
-    model = CustomDocumentModel()
+    model = CustomDocumentChatModel()
     print(model.invoke("What is a checksum?"))

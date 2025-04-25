@@ -15,11 +15,6 @@ export default [
 		icon: NoteSvg,
 	},
 	{
-		name: 'Web sources',
-		href: '/web-sources',
-		icon: EarthSvg,
-	},
-	{
 		name: 'Settings',
 		href: '/settings',
 		icon: SettingsSvg,

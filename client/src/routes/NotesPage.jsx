@@ -21,7 +21,7 @@ function NotesPage() {
 		const data = await response.json();
 		setNotes(data.files);
 
-		if (data.files.length > 0) {
+		if (data.files && data.files.length > 0) {
 			const toSelect = selected || data.files[0];
 			setSelectedNote(toSelect);
 		} else {
