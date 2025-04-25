@@ -2,8 +2,6 @@ import os
 import json
 import hashlib
 import time
-import requests
-from bs4 import BeautifulSoup
 
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains.retrieval import create_retrieval_chain
@@ -14,8 +12,9 @@ from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_community.vectorstores.faiss import FAISS as FaissStore
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
-DATA_FILES_DIR = os.path.join(os.path.dirname(__file__), "data", "files")
-DATA_URLS_DIR = os.path.join(os.path.dirname(__file__), "data", "urls")
+DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+DATA_FILES_DIR = os.path.join(DATA_DIR, "files")
+DATA_URLS_DIR = os.path.join(DATA_DIR, "urls")
 
 
 class CustomDocumentModel:

@@ -22,6 +22,9 @@ FROM python:3.9-slim
 # Set the working directory
 WORKDIR /app
 
+# Install git for syncing
+RUN apt-get update && apt-get install -y git
+
 # Copy requirements and install dependencies
 COPY server/requirements.txt /app
 RUN pip install --no-cache-dir --upgrade -r ./requirements.txt

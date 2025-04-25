@@ -98,6 +98,16 @@
 	font-size: 0.95em;
 }
 
+.markdown-preview h1,
+.markdown-preview h2,
+.markdown-preview h3,
+.markdown-preview h4,
+.markdown-preview h5,
+.markdown-preview h6 {
+	margin-top: 1em;
+	margin-bottom: 0.5em;
+}
+
 .markdown-preview a {
 	color: #60a5fa; /* blue-400 */
 	text-decoration: underline;
