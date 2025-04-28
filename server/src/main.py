@@ -1,4 +1,5 @@
 import json
+import git
 import os
 from datetime import datetime
 from typing import List
@@ -11,9 +12,7 @@ from fastapi.responses import (
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import hashlib
-from urllib.parse import quote, unquote
-import requests
-from bs4 import BeautifulSoup
+from urllib.parse import quote
 
 from models.files import FilesDataModel
 from models.tags import TagsDataModel
@@ -24,7 +23,9 @@ from model import (
     DATA_FILES_DIR,
 )
 
-TAGS_FILE = os.path.join(DATA_DIR, "tags.json")
+DATA_FILES_SYNC_DIR = os.path.join(DATA_DIR, "github")
+
+TAGS_FILE = os.path.join(DATA_FILES_DIR, "tags.json")
 # Load the config.json file
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.json")
 
@@ -54,8 +55,6 @@ def get_pending_status():
     # Check if pending documents
     last_document_change = getattr(assist_model, "last_document_change", None)
     last_updated = getattr(assist_model, "last_updated", None)
-
-    print(last_document_change, last_updated)
 
     if not last_document_change and not last_updated:
         return False
@@ -110,35 +109,56 @@ async def ask_question(
 # --- Document Management ---
 
 
+def sync_with_github():
+    print("Syncing with GitHub...")
+
+    sync_directory = DATA_FILES_SYNC_DIR
+    data_directory = DATA_FILES_DIR
+    repository_url = config.get("github_url", None).replace("https://", "")
+    access_token = config.get("github_access_token", None)
+
+    if not os.path.exists(sync_directory):
+        repo = git.Repo.clone_from(
+            f"https://{quote(access_token)}:x-oauth-basic@{repository_url}",
+            sync_directory,
+        )
+    else:
+        repo = git.Repo(sync_directory)
+
+    # Write all files from files dir to the sync dir
+    for filename in os.listdir(data_directory):
+        source_path = os.path.join(data_directory, filename)
+        dest_path = os.path.join(sync_directory, filename)
+
+        if os.path.isfile(source_path):
+            with open(source_path, "rb") as src_file:
+                with open(dest_path, "wb") as dest_file:
+                    dest_file.write(src_file.read())
+
+    repo.git.add(all=True)
+    repo.index.commit("Sync with local changes")
+    origin = repo.remote(name="origin")
+    origin.push()
+
+
 @app.get("/api/files", response_class=JSONResponse)
 async def get_files():
     files = files_model.get_files()
 
-    # Store checksum of files in config
-    checksum = hashlib.sha256(json.dumps(files).encode("utf-8")).hexdigest()
+    # Check if the correct config is set to sync
+    if "github_url" in config and "github_access_token" in config:
+        # Store checksum of files in config
+        checksum = hashlib.sha256(json.dumps(files).encode("utf-8")).hexdigest()
 
-    # Check if files updated since last load
-    if "files_checksum" in config and config["files_checksum"] == checksum:
-        # Write new checksum
+        # Check if files updated since last load
+        if "files_checksum" in config and config["files_checksum"] == checksum:
+            with open(CONFIG_PATH, "w") as f:
+                json.dump(config, f, indent=4)
+
+            # Sync using github url if provided
+            sync_with_github()
+
         config["files_checksum"] = checksum
-
-        with open(CONFIG_PATH, "w") as f:
-            json.dump(config, f, indent=4)
-
-        # Sync using github url if provided
-        if "github_url" in config and config["github_url"]:
-            github_url = config["github_url"]
-
-            # Use simple commit and push
-            today_str = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
-            commit_message = f"Sync files with GitHub ({today_str})"
-
-            print(f"Syncing files with GitHub: {github_url}")
-
-            os.system(f"git add {DATA_FILES_DIR} && git commit -m '{commit_message}'")
-            os.system(f"git push {github_url}")
-
-    config["files_checksum"] = checksum
 
     with open(CONFIG_PATH, "w") as f:
         json.dump(config, f, indent=4)
@@ -245,16 +265,16 @@ async def remove_tag(item: str, tag: str = Form(...)):
 @app.get("/api/settings")
 async def get_settings():
     if not os.path.exists(CONFIG_PATH):
-        # Return the current settings as JSON
         return {
             "chat_model": assist_model.chat_model,
             "embedding_model": assist_model.embedding_model,
             "temperature": assist_model.temperature,
             "github_url": "",
+            "github_access_token": "",
         }
-
     with open(CONFIG_PATH, "r") as f:
-        return json.load(f)
+        data = json.load(f)
+        return data
 
 
 @app.put("/api/settings", response_class=JSONResponse)
@@ -263,20 +283,19 @@ async def update_settings(
     embedding_model: str = Form("gemma3:1b"),
     temperature: float = Form(0.1),
     github_url: str = Form(""),
+    github_access_token: str = Form(""),
 ):
-    # Update the settings in the assist_model instance
     assist_model.chat_model = chat_model
     assist_model.embedding_model = embedding_model
     assist_model.temperature = temperature
 
-    # Reload model chain
     assist_model.load_model()
 
-    # Store in config.json
     config["chat_model"] = chat_model
     config["embedding_model"] = embedding_model
     config["temperature"] = temperature
     config["github_url"] = github_url
+    config["github_access_token"] = github_access_token
 
     with open(CONFIG_PATH, "w") as f:
         json.dump(config, f, indent=4)
@@ -286,6 +305,7 @@ async def update_settings(
         "embedding_model": embedding_model,
         "temperature": temperature,
         "github_url": github_url,
+        "github_access_token": github_access_token,
     }
 
 

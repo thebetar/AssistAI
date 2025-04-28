@@ -3,5 +3,6 @@
     "embedding_model": "mxbai-embed-large",
     "temperature": 0.3,
     "github_url": "https://github.com/thebetar/MarkdownNotes",
-    "files_checksum": "43e32706d3abf92c82912409c6338c87ef296255119cb7ace479de09a87d6508"
+    "files_checksum": "22c6ddf919d144e83d7c5bd0fc8a60c5426f1610aefb9ba52b6924e7fd21298f",
+    "github_access_token": ""
 }
