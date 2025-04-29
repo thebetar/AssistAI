@@ -49,9 +49,12 @@ assist_model = CustomDocumentChatModel(
 
 tags_model = TagsDataModel(tags_file=TAGS_FILE)
 files_model = FilesDataModel(files_dir=DATA_FILES_DIR, tags_model=tags_model)
+sync_files_model = None
 
 
 def get_pending_status():
+    global assist_model
+
     # Check if pending documents
     last_document_change = getattr(assist_model, "last_document_change", None)
     last_updated = getattr(assist_model, "last_updated", None)
@@ -71,11 +74,14 @@ def get_pending_status():
 @app.get("/api/pending", response_class=JSONResponse)
 async def pending_status():
     pending = get_pending_status()
+
     return {"pending": pending}
 
 
 @app.get("/api/history", response_class=JSONResponse)
 async def get_history():
+    global assist_model
+
     # Get the chat history from the assist_model instance
     chat_history = getattr(assist_model, "history", None)
 
@@ -92,9 +98,13 @@ async def ask_question(
     use_rag: str = Form("off"),
     clear: str = Form("false"),
 ):
+    global assist_model
+
+    # Check if the model is loaded
     use_rag_bool = use_rag == "on"
     clear_bool = clear == "true"
 
+    # Invoke the model
     response = assist_model.invoke(question, use_rag=use_rag_bool, clear=clear_bool)
     chat_history = getattr(assist_model, "history", None)
 
@@ -109,32 +119,69 @@ async def ask_question(
 # --- Document Management ---
 
 
-def sync_with_github():
-    print("Syncing with GitHub...")
+def sync_with_github(local_files):
+    global sync_files_model, config
 
+    print("[sync_with_github] Syncing to GitHub...")
+
+    # Initialise model if not initialised yet
+    if not sync_files_model:
+        sync_files_model = FilesDataModel(
+            files_dir=DATA_FILES_SYNC_DIR, tags_model=tags_model
+        )
+
+    # Define variables
     sync_directory = DATA_FILES_SYNC_DIR
     data_directory = DATA_FILES_DIR
     repository_url = config.get("github_url", None).replace("https://", "")
     access_token = config.get("github_access_token", None)
 
+    # Create sync repo if it doesn't exist otherwise load existing repo
     if not os.path.exists(sync_directory):
         repo = git.Repo.clone_from(
             f"https://{quote(access_token)}:x-oauth-basic@{repository_url}",
             sync_directory,
         )
+        repo.heads.master.checkout()
     else:
         repo = git.Repo(sync_directory)
+        repo.heads.master.checkout()
+        repo.git.pull()
 
-    # Write all files from files dir to the sync dir
-    for filename in os.listdir(data_directory):
-        source_path = os.path.join(data_directory, filename)
-        dest_path = os.path.join(sync_directory, filename)
+    # Write all current local files to sync directory, git detects changes
+    for local_file in local_files:
+        filename = local_file["name"]
+        content = local_file["content"]
 
-        if os.path.isfile(source_path):
-            with open(source_path, "rb") as src_file:
-                with open(dest_path, "wb") as dest_file:
-                    dest_file.write(src_file.read())
+        # Write the file to the sync directory
+        with open(os.path.join(sync_directory, filename), "w", encoding="utf-8") as f:
+            f.write(content)
 
+    # Make checksum from sync folder to check if files changed (could be new repo with already existing files)
+    sync_files = sync_files_model.get_files()
+    checksum = hashlib.sha256(json.dumps(sync_files).encode("utf-8")).hexdigest()
+
+    # Compare checksum with current local file checksum
+    if "files_checksum" in config and config["files_checksum"] != checksum:
+        print(
+            f"[sync_with_github] Changes detected, with checksums: ({config['files_checksum']}, {checksum})"
+        )
+        print("[sync_with_github] Syncing from Github...")
+
+        for sync_file in sync_files:
+            filename = sync_file["name"]
+            content = sync_file["content"]
+
+            # Write the file to the local directory
+            with open(
+                os.path.join(data_directory, filename), "w", encoding="utf-8"
+            ) as f:
+                f.write(content)
+
+    # Update checksum for use in next sync
+    config["files_checksum"] = checksum
+
+    # Write all changes to the sync directory
     repo.git.add(all=True)
     repo.index.commit("Sync with local changes")
     origin = repo.remote(name="origin")
@@ -143,6 +190,8 @@ def sync_with_github():
 
 @app.get("/api/files", response_class=JSONResponse)
 async def get_files():
+    global files_model, config
+
     files = files_model.get_files()
 
     # Check if the correct config is set to sync
@@ -151,15 +200,20 @@ async def get_files():
         checksum = hashlib.sha256(json.dumps(files).encode("utf-8")).hexdigest()
 
         # Check if files updated since last load
-        if "files_checksum" in config and config["files_checksum"] == checksum:
-            with open(CONFIG_PATH, "w") as f:
-                json.dump(config, f, indent=4)
+        if "files_checksum" in config and config["files_checksum"] != checksum:
+            print(
+                f"[get_files] Changes detected, with checksums: ({config['files_checksum']}, {checksum})"
+            )
+
+            # Update checksum for use in next sync
+            config["files_checksum"] = checksum
 
             # Sync using github url if provided
-            sync_with_github()
+            sync_with_github(files)
+        else:
+            config["files_checksum"] = checksum
 
-        config["files_checksum"] = checksum
-
+    # Write updated config to file (could be new checksum from either local changes or detected sync changes)
     with open(CONFIG_PATH, "w") as f:
         json.dump(config, f, indent=4)
 
@@ -168,6 +222,9 @@ async def get_files():
 
 @app.post("/api/files", response_class=JSONResponse)
 async def upload_note(filename: str = Form(...), content: str = Form(...)):
+    global assist_model, files_model
+
+    # Add file to local directory
     files_model.add(filename=filename, content=content)
 
     # Update last document change time in state
@@ -179,6 +236,9 @@ async def upload_note(filename: str = Form(...), content: str = Form(...)):
 
 @app.post("/api/files/upload", response_class=JSONResponse)
 async def upload_file(files: List[UploadFile] = File(...)):
+    global assist_model, files_model
+
+    # Per file that was uploaded add file buffer
     for file in files:
         files_model.add_buffer(filename=file.filename, content_buffer=file.file)
 
@@ -196,6 +256,8 @@ async def update_file(
     filename: str,
     content: str = Form(...),
 ):
+    global assist_model, files_model
+
     files_model.update(filename=filename, content=content)
 
     # Update last document change time in state
@@ -206,6 +268,8 @@ async def update_file(
 
 @app.delete("/api/files/{filename}", response_class=JSONResponse)
 async def delete_file(filename: str):
+    global assist_model, files_model
+
     # Remove file and tags
     files_model.delete(filename=filename)
     tags_model.remove_file(filename=filename)
@@ -221,6 +285,8 @@ async def delete_file(filename: str):
 
 @app.post("/api/files/reload", response_class=JSONResponse)
 async def reload_model():
+    global assist_model, files_model
+
     # Reload the vector store based on the new documents
     assist_model.load_documents()
     assist_model.load_vector_store(force=True)
@@ -236,6 +302,9 @@ async def reload_model():
 
 @app.get("/api/tags", response_class=JSONResponse)
 async def get_all_tags():
+    global tags_model
+
+    # Get all tags from the local tags file
     tags = tags_model.get_tags()
 
     return tags
@@ -243,8 +312,12 @@ async def get_all_tags():
 
 @app.post("/api/tags/{item:path}", response_class=JSONResponse)
 async def add_tag(item: str, tag: str = Form(...)):
+    global tags_model
+
+    # Add a tag to the item
     tags_model.add(filename=item, tag=tag)
 
+    # Get all tags from the updated local tags file
     tags = tags_model.get_tags()
 
     return {"tags": tags}
@@ -252,8 +325,12 @@ async def add_tag(item: str, tag: str = Form(...)):
 
 @app.delete("/api/tags/{item:path}", response_class=JSONResponse)
 async def remove_tag(item: str, tag: str = Form(...)):
+    global tags_model
+
+    # Remove a tag from the item
     tags_model.remove_tag(filename=item, tag=tag)
 
+    # Get all tags from the updated local tags file
     tags = tags_model.get_tags()
 
     return {"tags": tags}
@@ -264,6 +341,9 @@ async def remove_tag(item: str, tag: str = Form(...)):
 
 @app.get("/api/settings")
 async def get_settings():
+    global assist_model
+
+    # Check if the config file exists (gets created after first edit)
     if not os.path.exists(CONFIG_PATH):
         return {
             "chat_model": assist_model.chat_model,
@@ -285,18 +365,24 @@ async def update_settings(
     github_url: str = Form(""),
     github_access_token: str = Form(""),
 ):
+    global assist_model, config
+
+    # Set parameters in assist_model
     assist_model.chat_model = chat_model
     assist_model.embedding_model = embedding_model
     assist_model.temperature = temperature
 
+    # Reload the model with changed parameters
     assist_model.load_model()
 
+    # Store changes in assist model
     config["chat_model"] = chat_model
     config["embedding_model"] = embedding_model
     config["temperature"] = temperature
     config["github_url"] = github_url
     config["github_access_token"] = github_access_token
 
+    # Write new config changes
     with open(CONFIG_PATH, "w") as f:
         json.dump(config, f, indent=4)
 
