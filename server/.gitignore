@@ -5,6 +5,6 @@ __pycache__
 
 src/data/github/**/*
 src/data/files/**/*
-!src/data/files/placeholder
+!src/data/files/example.md
 src/data/urls/**/*
 src/data/vectorstore/*
