@@ -4,5 +4,6 @@ node_modules
 __pycache__
 
 src/data/files/**/*
+!src/data/files/placeholder
 src/data/urls/**/*
 src/data/vectorstore/*
