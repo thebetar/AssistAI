@@ -158,7 +158,22 @@ class CustomDocumentChatModel:
         vector_store_path = os.path.join(
             os.path.dirname(__file__), "data", "vectorstore"
         )
+
+        if not os.path.exists(vector_store_path):
+            os.makedirs(vector_store_path, exist_ok=True)
+
         vector_store_created_path = os.path.join(vector_store_path, "created.json")
+
+        if not os.path.exists(vector_store_created_path):
+            with open(vector_store_created_path, "w") as f:
+                json.dump(
+                    {
+                        "timestamp": time.time(),
+                        "documents": [],
+                        "checksum": "",
+                    },
+                    f,
+                )
 
         if self.__new_vector_store() or force:
             BATCH_SIZE = 30
