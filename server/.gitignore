@@ -3,6 +3,7 @@ node_modules
 .venv
 __pycache__
 
+src/data/github/**/*
 src/data/files/**/*
 !src/data/files/placeholder
 src/data/urls/**/*
