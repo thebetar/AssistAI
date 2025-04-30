@@ -151,6 +151,11 @@ class CustomDocumentChatModel:
         )
         self.documents = splitter.split_documents(self.documents)
 
+        # Filter out empty documents
+        self.documents = [
+            doc for doc in self.documents if doc.page_content.strip()
+        ]
+
         return self.documents
 
     def load_vector_store(self, force=False):
@@ -180,6 +185,8 @@ class CustomDocumentChatModel:
 
             # Load documents from class into local variable
             documents = self.documents[:]
+
+            print(f"[custom-chat-model] Loaded {len(documents)} document chunks for vector store.")
 
             self.vector_store = FaissStore.from_documents(
                 documents[:BATCH_SIZE], self.embeddings

@@ -2,7 +2,7 @@
     "chat_model": "gemma3:1b",
     "embedding_model": "mxbai-embed-large",
     "temperature": 0.3,
-    "github_url": "https://github.com/thebetar/MarkdownNotes",
-    "files_checksum": "22c6ddf919d144e83d7c5bd0fc8a60c5426f1610aefb9ba52b6924e7fd21298f",
+    "github_url": "",
+    "files_checksum": "42877db2366769924b84cf26bace693d84178ab459272c99687162385996fca1",
     "github_access_token": ""
 }

@@ -833,3 +833,8 @@ response: content='Okay, let’s dive deeper into managing state in Backbone.js.
 
 message: 
 message: 
+message: What is a checksum?
+time: 1.532682180404663s
+response: {'input': 'What is a checksum?', 'chat_history': '', 'context': [Document(metadata={'source': '/home/larsvonk/Projects/AssistAI/server/src/data/files/example.md'}, page_content='# Example document\n\nThis is an example document')], 'answer': 'According to your notes, a checksum is a simple calculation of data that allows for error detection. It’s a unique value generated for each piece of data, and it’s recalculated later to verify that the data hasn’t been altered during transmission or storage. Essentially, it’s a digital fingerprint.'}
+------------------------------------------------
+
