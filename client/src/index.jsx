@@ -22,6 +22,7 @@ render(
 		<Router root={App}>
 			<Route path="/assist" component={AssistPage} />
 			<Route path="/notes" component={NotesPage} />
+			<Route path="/notes/tag/:tag" component={NotesPage} />
 			<Route path="/settings" component={SettingsPage} />
 			<Route path="*" component={RedirectPage} />
 		</Router>
