@@ -1,6 +1,6 @@
 import { createSignal, onCleanup, For, onMount, useContext } from 'solid-js';
 import MarkdownPreview from '../components/MarkdownPreview';
-import { PendingContext } from '../App';
+import { RefreshContext } from '../App';
 
 function AssistPage() {
 	const [question, setQuestion] = createSignal('');
@@ -12,7 +12,7 @@ function AssistPage() {
 	const [timer, setTimer] = createSignal(0);
 	const [saveSuccess, setSaveSuccess] = createSignal(false);
 
-	const fetchPending = useContext(PendingContext);
+	const fetchPending = useContext(RefreshContext);
 
 	let timerInterval = null;
 

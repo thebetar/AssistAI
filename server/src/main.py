@@ -26,8 +26,21 @@ from model import (
 DATA_FILES_SYNC_DIR = os.path.join(DATA_DIR, "github")
 
 TAGS_FILE = os.path.join(DATA_FILES_DIR, "tags.json")
+
 # Load the config.json file
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.json")
+
+if not os.path.exists(CONFIG_PATH):
+    # Create a default config file if it doesn't exist
+    default_config = {
+        "chat_model": "gemma3:1b",
+        "embedding_model": "mxbai-embed-large",
+        "temperature": 0.1,
+        "github_url": "",
+        "github_access_token": "",
+    }
+    with open(CONFIG_PATH, "w") as f:
+        json.dump(default_config, f, indent=4)
 
 # Read the config file
 with open(CONFIG_PATH, "r") as f:
@@ -210,7 +223,13 @@ async def get_files():
 
             # Sync using github url if provided
             sync_with_github(files)
+
+            # Get files again after sync
+            files = files_model.get_files()
+            print("[get_files] Sync completed.")
         else:
+            print("[get_files] No changes detected.")
+
             config["files_checksum"] = checksum
 
     # Write updated config to file (could be new checksum from either local changes or detected sync changes)
@@ -381,6 +400,10 @@ async def update_settings(
     config["temperature"] = temperature
     config["github_url"] = github_url
     config["github_access_token"] = github_access_token
+
+    # Reset checksum for reload if github url is changed
+    if github_url != config.get("github_url", None):
+        config["files_checksum"] = None
 
     # Write new config changes
     with open(CONFIG_PATH, "w") as f:

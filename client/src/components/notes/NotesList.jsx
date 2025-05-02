@@ -1,4 +1,5 @@
-import { createSignal } from 'solid-js';
+import { createEffect, createSignal } from 'solid-js';
+import { useParams } from '@solidjs/router';
 
 import PlusSvg from '../../assets/svg/used/plus.svg';
 
@@ -7,9 +8,9 @@ const MAX_PREVIEW_LENGTH = 80;
 
 function NotesList({ notes = [], selectedNote, setSelectedNote, setAddMode }) {
 	const [filter, setFilter] = createSignal('');
+	const [filteredNotes, setFilteredNotes] = createSignal([]);
 
-	const filteredNotes = () =>
-		notes().filter(n => `${n.name.toLowerCase()} ${n.content.toLowerCase()}`.includes(filter().toLowerCase()));
+	const params = useParams();
 
 	function getPreviewDescription(content) {
 		const lines = content.split('\n');
@@ -31,6 +32,32 @@ function NotesList({ notes = [], selectedNote, setSelectedNote, setAddMode }) {
 
 		return preview;
 	}
+
+	createEffect(() => {
+		function runFilter() {
+			if (params.tag) {
+				const tag = params.tag.toLowerCase();
+				setFilteredNotes(
+					notes()
+						.filter(n => n.tags.some(t => t.toLowerCase() === tag))
+						.filter(n =>
+							`${n.name.toLowerCase()} ${n.content.toLowerCase()}`.includes(filter().toLowerCase()),
+						),
+				);
+				return;
+			}
+
+			setFilteredNotes(
+				notes().filter(n =>
+					`${n.name.toLowerCase()} ${n.content.toLowerCase()}`.includes(filter().toLowerCase()),
+				),
+			);
+		}
+
+		if (notes().length > 0) {
+			runFilter();
+		}
+	}, [notes, filter, params]);
 
 	return (
 		<aside class="w-80 bg-zinc-800 border-r border-zinc-700 overflow-y-auto h-screen">

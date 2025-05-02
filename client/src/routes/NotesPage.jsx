@@ -1,6 +1,6 @@
 import { createSignal, onMount, useContext } from 'solid-js';
 
-import { PendingContext } from '../App';
+import { RefreshContext } from '../App';
 import NotesList from '../components/notes/NotesList';
 import NotesPreview from '../components/notes/NotesPreview';
 
@@ -9,7 +9,7 @@ function NotesPage() {
 	const [selectedNote, setSelectedNote] = createSignal(null);
 	const [addMode, setAddMode] = createSignal(false);
 
-	const checkPending = useContext(PendingContext);
+	const checkPending = useContext(RefreshContext);
 
 	async function fetchNotes(selected = null) {
 		const response = await fetch('/api/files');
