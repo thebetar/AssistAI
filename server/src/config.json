@@ -1,8 +1,7 @@
 {
     "chat_model": "gemma3:1b",
     "embedding_model": "mxbai-embed-large",
-    "temperature": 0.3,
+    "temperature": 0.1,
     "github_url": "",
-    "files_checksum": "42877db2366769924b84cf26bace693d84178ab459272c99687162385996fca1",
     "github_access_token": ""
 }
