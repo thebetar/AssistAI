@@ -1,0 +1,27 @@
+{
+    "API.md": [
+        "web",
+        "api"
+    ],
+    "Activation function.md": [
+        "ai"
+    ],
+    "Angular.md": [
+        "web"
+    ],
+    "Arduino.md": [
+        "embedded",
+        "microcontroller"
+    ],
+    "Assembly.md": [
+        "embedded",
+        "microcontroller"
+    ],
+    "Amplemath.md": [
+        "math"
+    ],
+    "Astro.md": [
+        "web"
+    ],
+    "Automate life.md": []
+}

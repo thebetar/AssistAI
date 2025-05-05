@@ -1,10 +1,5 @@
 node_modules
-.env
-.venv
-__pycache__
 
-src/data/github/**/*
-src/data/files/**/*
-!src/data/files/example.md
-src/data/urls/**/*
-src/data/vectorstore/*
+data/files
+!data/files/example.md
+data/vectorstore
