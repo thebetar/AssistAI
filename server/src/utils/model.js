@@ -74,7 +74,16 @@ class CustomDocumentChatModel {
         return answer;
     }
 
-    __get_run_time(startTime) {
+    async enrich(message, relatedNotes) {
+        const response = await this.enrichChain.invoke({
+            input: message,
+            related_notes: relatedNotes.join('\n\n'),
+        });
+
+        return response;
+    }
+
+    __getRunTime(startTime) {
         return new Date().getTime() - startTime;
     }
 
@@ -87,36 +96,60 @@ class CustomDocumentChatModel {
         })
 
         if (!this.silent) {
-            console.log(`[custom-chat-model] Model initialed (${this.__get_run_time(startTime)})`)
+            console.log(`[custom-chat-model] Model initialed (${this.__getRunTime(startTime)})`)
         }
 
         this.defaultPrompt = ChatPromptTemplate.fromMessages([
-            (
+            [
                 "system",
                 `You are a helpful and knowledgeable assistant. 
                 Use the previous chat history below to provide accurate, concise, and context-aware answers. 
-                If you are unsure, say so. Do not make up information.`
-            ),
-            ("system", "Chat History:\n{chat_history}"),
-            ("human", "{input}"),
+                If you are unsure, say so. Do not make up information.
+                
+                Answer only with the note, your response will be used to generate a new note.`
+            ],
+            ["system", "Chat History:\n{chat_history}"],
+            ["human", "{input}"],
         ]);
 
         this.defaultChain = this.defaultPrompt.pipe(this.model).pipe(new StringOutputParser());
 
+        this.enrichPrompt = ChatPromptTemplate.fromMessages([
+            [
+                "system",
+                `You are a helpful and concise assistant that improves user-written notes.
+
+                Instructions:
+                - Use the original note as a base and improve it.
+                - Keep the original tone and style.
+                - Do not use buzzwords or marketing language.
+                - Add relevant details or clarifications if helpful.
+                - If the topic involves programming, include concise code examples.
+                - Only return the updated note text. Do not include any explanations or extra commentary.
+                - Use markdown formatting to make the note more readable (use headers, lists and code blocks).
+                - The minimum length should be about 1 page`
+            ],
+            ["system", "Related notes:\n{related_notes}"],
+            ["human", "{input}"],
+        ]);
+
+
+        this.enrichChain = this.enrichPrompt.pipe(this.model).pipe(new StringOutputParser());
+
         this.ragPrompt = ChatPromptTemplate.fromMessages([
-            (
+            [
                 "system",
                 `You are an expert assistant specialized in answering questions based on provided documents. 
                 Use the context and chat history below to answer. Only use this information—do not make things up.
                 Start the answer with, 'According to your notes, ' and end with a summary of the answer.`
-            ),
-            ("system", "Context:\n{context}"),
-            ("system", "Chat History:\n{chat_history}"),
-            ("human", "{input}"),
+            ],
+            ["system", "Context:\n{context}"],
+            ["system", "Chat History:\n{chat_history}"],
+            ["human", "{input}"],
         ]);
 
         if (!this.silent) {
-            console.log(`[custom-chat-model] Prompt initialed (${this.__get_run_time(startTime)})`)
+            console.log(`[custom-chat-model] Prompt initialed (${this.__getRunTime(startTime)})`)
         }
 
         this.documentsChain = await createStuffDocumentsChain({
@@ -125,13 +158,13 @@ class CustomDocumentChatModel {
         })
 
         if (!this.silent) {
-            console.log(`[custom-chat-model] Documents chain initialed (${this.__get_run_time(startTime)})`)
+            console.log(`[custom-chat-model] Documents chain initialed (${this.__getRunTime(startTime)})`)
         }
 
         await this.loadDocuments();
 
         if (!this.silent) {
-            console.log(`[custom-chat-model] Documents loaded (${this.__get_run_time(startTime)})`)
+            console.log(`[custom-chat-model] Documents loaded (${this.__getRunTime(startTime)})`)
         }
 
         this.embeddings = new OllamaEmbeddings({
@@ -141,7 +174,7 @@ class CustomDocumentChatModel {
         await this.loadVectorStore(this.refresh);
 
         if (!this.silent) {
-            console.log(`[custom-chat-model] Vector store loaded (${this.__get_run_time(startTime)})`)
+            console.log(`[custom-chat-model] Vector store loaded (${this.__getRunTime(startTime)})`)
         }
 
         this.retriever = this.vectorStore.asRetriever({
@@ -153,8 +186,8 @@ class CustomDocumentChatModel {
         })
 
         if (!this.silent) {
-            console.log(`[custom-chat-model] Retrieval chain initialed (${this.__get_run_time(startTime)})`)
-            console.log(`[custom-chat-model] Model loaded (${this.__get_run_time(startTime)})`)
+            console.log(`[custom-chat-model] Retrieval chain initialed (${this.__getRunTime(startTime)})`)
+            console.log(`[custom-chat-model] Model loaded (${this.__getRunTime(startTime)})`)
         }
 
         this.ready = true;

@@ -5,7 +5,7 @@ import routes from './constants/routes';
 import TagIcon from './assets/svg/used/tag.svg';
 
 // Create context for pending check
-export const RefreshContext = createContext();
+export const ApplicationContext = createContext();
 
 function App(props) {
 	const [pending, setPending] = createSignal(false);
@@ -22,8 +22,10 @@ function App(props) {
 			}
 			const data = await res.json();
 			setPending(!!data.pending);
+
+			return !!data.pending;
 		} catch (e) {
-			// ignore
+			return false;
 		}
 	};
 
@@ -40,29 +42,45 @@ function App(props) {
 			const tags = Array.from(new Set(Object.values(data).flatMap(t => t)));
 
 			setTags(tags);
+
+			return tags;
 		} catch (e) {
-			// ignore
+			return [];
 		}
 	};
 
-	const refreshLayout = async () => {
-		await checkPending();
-		await fetchTags();
+	const getApplicationData = async (refresh = false) => {
+		if (refresh) {
+			const newPending = await checkPending();
+			const newTags = await fetchTags();
+
+			return {
+				pending: newPending,
+				tags: newTags,
+			};
+		} else {
+			return {
+				pending: pending(),
+				tags: tags(),
+			};
+		}
 	};
 
 	const handleReloadModel = async () => {
 		setPendingLoading(true);
+
 		try {
 			await fetch('/api/files/reload', { method: 'POST' });
 			setPending(false);
 		} catch (e) {
 			// ignore
 		}
+
 		setPendingLoading(false);
 	};
 
 	onMount(() => {
-		refreshLayout();
+		getApplicationData(true);
 	});
 
 	const renderNavItem = item => (
@@ -99,49 +117,47 @@ function App(props) {
 	};
 
 	return (
-		<RefreshContext.Provider value={refreshLayout}>
-			<div class="flex">
-				<nav class="bg-zinc-900 h-screen w-80 text-white shadow-md z-50">
-					<header class="text-xl font-semibold px-4 py-6">Assist AI</header>
+		<div class="flex">
+			<nav class="bg-zinc-900 h-screen w-80 text-white shadow-md z-50">
+				<header class="text-xl font-semibold px-4 pt-6 pb-4">Assist AI</header>
 
-					<ul>{routes.map(renderNavItem)}</ul>
+				<ul>{routes.map(renderNavItem)}</ul>
 
-					<header class="text-xl font-semibold px-4 py-6">Tags</header>
+				<header class="text-xl font-semibold px-4 pt-6 pb-2">Tags</header>
 
-					<ul class="flex flex-col gap-2">{tags().map(renderTagItem)}</ul>
-				</nav>
+				<ul class="flex flex-col gap-2 px-4">{tags().map(renderTagItem)}</ul>
+			</nav>
 
-				<div className="h-screen w-screen overflow-y-scroll bg-zinc-800 text-white">
-					{/* Pending notification bar */}
-					{pending() && (
-						<div class="p-4 rounded border border-yellow-300 bg-yellow-100 text-yellow-900 flex items-center justify-between">
-							<div>
-								<b>Sources have changed.</b> The model needs to reload to include recent changes.
-								<br />
-								<span class="text-xs">Reloading may take a while.</span>
-							</div>
-
-							<button
-								class="ml-4 px-4 py-2 rounded bg-yellow-300 text-yellow-900 font-semibold hover:bg-yellow-400 transition disabled:opacity-60 cursor-pointer"
-								onClick={handleReloadModel}
-								disabled={pendingLoading()}
-							>
-								{pendingLoading() ? (
-									<div class="flex gap-x-1">
-										<div class="loader w-3 h-3" />
-										Reloading...
-									</div>
-								) : (
-									'Reload Model'
-								)}
-							</button>
+			<div className="h-screen w-screen overflow-y-scroll bg-zinc-800 text-white">
+				{/* Pending notification bar */}
+				{pending() && (
+					<div class="px-4 py-2 rounded border border-yellow-300 bg-yellow-100 text-yellow-900 flex items-center justify-between text-sm">
+						<div>
+							<b>Sources have changed.</b> The model needs to reload to include recent changes.
+							<br />
+							<span class="text-xs">Reloading may take a while.</span>
 						</div>
-					)}
 
-					<RefreshContext.Provider value={checkPending}>{props.children}</RefreshContext.Provider>
-				</div>
+						<button
+							class="ml-4 px-4 py-2 rounded bg-yellow-300 text-yellow-900 font-semibold hover:bg-yellow-400 transition disabled:opacity-60 cursor-pointer"
+							onClick={handleReloadModel}
+							disabled={pendingLoading()}
+						>
+							{pendingLoading() ? (
+								<div class="flex gap-x-1">
+									<div class="loader w-3 h-3" />
+									Reloading...
+								</div>
+							) : (
+								'Reload Model'
+							)}
+						</button>
+					</div>
+				)}
+
+				<ApplicationContext.Provider value={getApplicationData}>{props.children}</ApplicationContext.Provider>
 			</div>
-		</RefreshContext.Provider>
+		</div>
 	);
 }
 

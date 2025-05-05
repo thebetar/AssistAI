@@ -35,19 +35,19 @@ let config = loadConfig();
 
 
 // --- Utility ---
-function get_pending_status() {
-    const last_document_change = customDocumentChatModel.last_document_change;
-    const last_updated = customDocumentChatModel.last_updated;
+function getPendingStatus() {
+    const lastDocumentchange = customDocumentChatModel.lastDocumentChange;
+    const lastUpdated = customDocumentChatModel.lastUpdated;
 
-    if (!last_document_change && !last_updated) {
+    if (!lastDocumentchange && !lastUpdated) {
         return false;
     }
 
-    if (last_document_change && !last_updated) {
+    if (lastDocumentchange && !lastUpdated) {
         return true;
     }
 
-    if (last_document_change > last_updated) {
+    if (lastDocumentchange > lastUpdated) {
         return true;
     }
 
@@ -65,8 +65,8 @@ async function syncWithGithub(localFiles) {
 
     const syncDirectory = DATA_FILES_SYNC_DIR;
     const dataDirectory = DATA_FILES_DIR;
-    const repositoryUrl = (config.github_url || '').replace('https://', '');
-    const accessToken = config.github_access_token || '';
+    const repositoryUrl = (config.githubUrl || '').replace('https://', '');
+    const accessToken = config.githubAccessToken || '';
 
     // Clone or pull repo
     let repo;
@@ -95,7 +95,7 @@ async function syncWithGithub(localFiles) {
     const checksum = crypto.createHash('sha256').update(JSON.stringify(syncFiles)).digest('hex');
 
     // Compare checksum with current local file checksum
-    if ('files_checksum' in config && config.files_checksum !== checksum) {
+    if ('filesChecksum' in config && config.filesChecksum !== checksum) {
         // Sync from GitHub to local
         for (const syncFile of syncFiles) {
             const filename = syncFile.name;
@@ -105,7 +105,7 @@ async function syncWithGithub(localFiles) {
     }
 
     // Update checksum for next sync
-    config.files_checksum = checksum;
+    config.filesChecksum = checksum;
 
     // Commit and push changes
     await repo.add('.');
@@ -122,7 +122,7 @@ async function syncWithGithub(localFiles) {
 // --- API Endpoints ---
 
 app.get('/api/pending', (req, res) => {
-    res.json({ pending: get_pending_status() });
+    res.json({ pending: getPendingStatus() });
 });
 
 app.get('/api/history', (req, res) => {
@@ -133,12 +133,12 @@ app.get('/api/history', (req, res) => {
     res.json({ history: customDocumentChatModel.history });
 });
 
-app.post('/api/question', (req, res) => {
+app.post('/api/question', async (req, res) => {
     const question = req.body.question || "";
     const use_rag = req.body.use_rag === "on";
     const clear = req.body.clear === "true";
 
-    const response = customDocumentChatModel.invoke(question, use_rag, clear);
+    const response = await customDocumentChatModel.invoke(question, use_rag, clear);
 
     res.json({
         response,
@@ -155,12 +155,12 @@ app.get('/api/files', async (req, res) => {
     let files = filesModel.getFiles();
 
     // Check if the correct config is set to sync
-    if (config.github_url && config.github_access_token) {
+    if (config.githubUrl && config.githubAccessToken) {
         const checksum = crypto.createHash('sha256').update(JSON.stringify(files)).digest('hex');
 
-        if ('files_checksum' in config && config.files_checksum !== checksum) {
+        if ('filesChecksum' in config && config.filesChecksum !== checksum) {
             // Update checksum for use in next sync
-            config.files_checksum = checksum;
+            config.filesChecksum = checksum;
 
             // Sync using github url if provided
             await syncWithGithub(files);
@@ -168,7 +168,7 @@ app.get('/api/files', async (req, res) => {
             // Get files again after sync
             files = filesModel.getFiles();
         } else {
-            config.files_checksum = checksum;
+            config.filesChecksum = checksum;
         }
 
         // Write updated config to file
@@ -183,7 +183,7 @@ app.post('/api/files', (req, res) => {
     const { filename, content } = req.body;
 
     filesModel.add(filename, content);
-    customDocumentChatModel.last_document_change = new Date();
+    customDocumentChatModel.lastDocumentChange = new Date();
 
     res.json({ success: true, filename });
 });
@@ -193,10 +193,10 @@ app.post('/api/files/upload', upload.array('files'), (req, res) => {
         filesModel.add(file.originalname, file.buffer);
     });
 
-    customDocumentChatModel.last_document_change = new Date();
+    customDocumentChatModel.lastDocumentChange = new Date();
 
-    const updated_files = filesModel.getFiles();
-    res.json({ files: updated_files });
+    const updatedFiles = filesModel.getFiles();
+    res.json({ files: updatedFiles });
 });
 
 app.put('/api/files/:filename', (req, res) => {
@@ -205,7 +205,7 @@ app.put('/api/files/:filename', (req, res) => {
     const content = req.body.content;
 
     filesModel.update(oldFilename, filename, content);
-    customDocumentChatModel.last_document_change = new Date();
+    customDocumentChatModel.lastDocumentChange = new Date();
     res.json({ success: true, filename: filename });
 });
 
@@ -215,17 +215,31 @@ app.delete('/api/files/:filename', (req, res) => {
     filesModel.delete(filename);
     tagsModel.removeFile(filename);
 
-    customDocumentChatModel.last_document_change = new Date();
-    const updated_files = filesModel.getFiles();
-    res.json({ files: updated_files });
+    customDocumentChatModel.lastDocumentChange = new Date();
+    const updatedFiles = filesModel.getFiles();
+    res.json({ files: updatedFiles });
 });
 
 app.post('/api/files/reload', (req, res) => {
     customDocumentChatModel.loadModel();
-    customDocumentChatModel.last_updated = new Date();
+    customDocumentChatModel.lastUpdated = new Date();
 
-    const updated_files = filesModel.getFiles();
-    res.json({ files: updated_files });
+    const updatedFiles = filesModel.getFiles();
+    res.json({ files: updatedFiles });
+});
+
+app.post('/api/files/enrich', async (req, res) => {
+    const content = req.body.content;
+    const relatedFiles = req.body.relatedNotes || [];
+
+    let relatedNotes = [];
+
+    if (relatedFiles.length > 0) {
+        relatedNotes = relatedFiles.map(file => filesModel.getFileContent(file));
+    }
+
+    const enrichedContent = await customDocumentChatModel.enrich(content, relatedNotes);
+    res.json({ enrichedContent });
 });
 
 // --- Tags Management ---
@@ -260,11 +274,11 @@ app.delete('/api/tags/:item', (req, res) => {
 app.get('/api/settings', (req, res) => {
     if (!fs.existsSync(CONFIG_PATH)) {
         return res.json({
-            chat_model: customDocumentChatModel.chat_model,
-            embedding_model: customDocumentChatModel.embedding_model,
+            chatModel: customDocumentChatModel.chatModel,
+            embeddingModel: customDocumentChatModel.embeddingModel,
             temperature: customDocumentChatModel.temperature,
-            github_url: "",
-            github_access_token: "",
+            githubUrl: "",
+            githubAccessToken: "",
         });
     }
     const data = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
@@ -273,30 +287,30 @@ app.get('/api/settings', (req, res) => {
 
 app.put('/api/settings', (req, res) => {
     const {
-        chat_model = "gemma3:1b",
-        embedding_model = "gemma3:1b",
+        chatModel = "gemma3:1b",
+        embeddingModel = "gemma3:1b",
         temperature = 0.1,
-        github_url = "",
-        github_access_token = "",
+        githubUrl = "",
+        githubAccessToken = "",
     } = req.body;
 
-    customDocumentChatModel.chat_model = chat_model;
-    customDocumentChatModel.embedding_model = embedding_model;
+    customDocumentChatModel.chatModel = chatModel;
+    customDocumentChatModel.embeddingModel = embeddingModel;
     customDocumentChatModel.temperature = temperature;
-    customDocumentChatModel.load_model();
+    customDocumentChatModel.loadModel();
 
-    // Reset checksum if github_url changed
-    if (github_url !== config.github_url) {
-        config.files_checksum = null;
+    // Reset checksum if githubUrl changed
+    if (githubUrl !== config.githubUrl) {
+        config.filesChecksum = null;
     }
 
     config = {
-        chat_model,
-        embedding_model,
+        chatModel,
+        embeddingModel,
         temperature,
-        github_url,
-        github_access_token,
-        files_checksum: config.files_checksum,
+        githubUrl,
+        githubAccessToken,
+        filesChecksum: config.filesChecksum,
     };
     fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 4));
     res.json(config);
@@ -304,8 +318,8 @@ app.put('/api/settings', (req, res) => {
 
 // --- Catch-all for client-side routing ---
 app.use((req, res, next) => {
-    const full_path = req.path;
-    if (full_path.startsWith('/api/') || full_path.startsWith('/assets/')) {
+    const fullPath = req.path;
+    if (fullPath.startsWith('/api/') || fullPath.startsWith('/assets/')) {
         return next();
     }
     // Serve index.html for SPA
