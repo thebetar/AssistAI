@@ -10,11 +10,11 @@ export function loadConfig() {
 
     if (!fs.existsSync(CONFIG_PATH)) {
         config = {
-            chat_model: "gemma3:1b",
-            embedding_model: "mxbai-embed-large",
+            chatModel: "gemma3:1b",
+            embeddingModel: "mxbai-embed-large",
             temperature: 0.1,
-            github_url: "",
-            github_access_token: "",
+            githubUrl: "",
+            githubAccessToken: "",
         };
         fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 4));
     } else {

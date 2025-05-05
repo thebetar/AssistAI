@@ -23,5 +23,12 @@
     "Astro.md": [
         "web"
     ],
-    "Automate life.md": []
+    "Automate life.md": [],
+    "Back propagation": [
+        "ai",
+        "machinelearning"
+    ],
+    "Activation function": [
+        "machinelearning"
+    ]
 }

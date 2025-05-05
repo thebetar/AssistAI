@@ -1,15 +1,16 @@
 import { createSignal, onMount, useContext } from 'solid-js';
 
-import { RefreshContext } from '../App';
+import { ApplicationContext } from '../App';
 import NotesList from '../components/notes/NotesList';
 import NotesPreview from '../components/notes/NotesPreview';
 
 function NotesPage() {
 	const [notes, setNotes] = createSignal([]);
+	const [tags, setTags] = createSignal([]);
 	const [selectedNote, setSelectedNote] = createSignal(null);
 	const [addMode, setAddMode] = createSignal(false);
 
-	const checkPending = useContext(RefreshContext);
+	const getApplicationData = useContext(ApplicationContext);
 
 	async function fetchNotes(selected = null) {
 		const response = await fetch('/api/files');
@@ -19,14 +20,46 @@ function NotesPage() {
 		}
 
 		const data = await response.json();
-		setNotes(data.files);
 
-		if (data.files && data.files.length > 0) {
-			const toSelect = selected || data.files[0];
-			setSelectedNote(toSelect);
+		// Remove file extension from names
+		const files = data.files.map(file => {
+			const name = file.name.split('.').slice(0, -1).join('.');
+			return {
+				...file,
+				name,
+			};
+		});
+
+		setNotes(files);
+
+		getApplicationData(true).then(data => {
+			setTags(data.tags);
+		});
+
+		if (files && files.length > 0) {
+			if (selected) {
+				setSelectedNote(selected);
+				return;
+			}
+
+			if (localStorage.getItem('selectedNote')) {
+				const local = files.find(f => f.name === localStorage.getItem('selectedNote'));
+				if (local) {
+					setSelectedNote(local);
+					return;
+				}
+			}
+
+			setSelectedNote(null);
 		} else {
 			setSelectedNote(null);
 		}
+	}
+
+	function handleSetSelectedNote(note) {
+		localStorage.setItem('selectedNote', note.name);
+		setAddMode(false);
+		setSelectedNote(note);
 	}
 
 	onMount(() => {
@@ -39,7 +72,7 @@ function NotesPage() {
 			<NotesList
 				notes={notes}
 				selectedNote={selectedNote}
-				setSelectedNote={setSelectedNote}
+				setSelectedNote={handleSetSelectedNote}
 				setAddMode={setAddMode}
 			/>
 
@@ -50,7 +83,9 @@ function NotesPage() {
 				addMode={addMode}
 				setAddMode={setAddMode}
 				fetchNotes={fetchNotes}
-				checkPending={checkPending}
+				getApplicationData={getApplicationData}
+				notes={notes}
+				tags={tags}
 			/>
 		</div>
 	);

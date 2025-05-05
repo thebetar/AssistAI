@@ -19,7 +19,7 @@ function NotesList({ notes = [], selectedNote, setSelectedNote, setAddMode }) {
 
 		if (lines.length > 1) {
 			preview = lines
-				.filter(l => !STARTS_WITH_FILTER.some(prefix => l.trim().startsWith(prefix)))
+				.filter(l => !STARTS_WITH_FILTER.some(prefix => l.trim().startsWith(prefix)) && l.trim().length > 0)
 				.slice(0, 2)
 				.join(' ');
 		} else {

@@ -26,6 +26,11 @@ class FilesDataModel {
     }
 
     getFileContent(file) {
+        // If file does not contain .md, add it
+        if (!file.endsWith('.md')) {
+            file += '.md';
+        }
+
         const filePath = path.join(this.filesDir, file);
 
         if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
@@ -89,7 +94,7 @@ class FilesDataModel {
     }
 
     delete(filename) {
-        const filePath = path.join(this.filesDir, filename);
+        const filePath = path.join(this.filesDir, `${filename}.md`);
 
         if (!fs.existsSync(filePath)) {
             return null;

@@ -9,8 +9,8 @@
 
 		<script>
 			window.__INITIAL_STATE__ = {
-				history: {% if history %}{{ history | tojson }}{% else %}[]{% endif %},
-				pending: {% if pending %}true{% else %}false{% endif %}
+				history: [],
+				pending: false,
 			};
 		</script>
 	</head>

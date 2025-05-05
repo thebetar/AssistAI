@@ -1,6 +1,6 @@
 import { createSignal, onCleanup, For, onMount, useContext } from 'solid-js';
 import MarkdownPreview from '../components/MarkdownPreview';
-import { RefreshContext } from '../App';
+import { ApplicationContext } from '../App';
 
 function AssistPage() {
 	const [question, setQuestion] = createSignal('');
@@ -12,7 +12,7 @@ function AssistPage() {
 	const [timer, setTimer] = createSignal(0);
 	const [saveSuccess, setSaveSuccess] = createSignal(false);
 
-	const fetchPending = useContext(RefreshContext);
+	const getApplicationData = useContext(ApplicationContext);
 
 	let timerInterval = null;
 
@@ -57,14 +57,14 @@ function AssistPage() {
 		e.preventDefault();
 		startLoading();
 
-		const formData = new FormData();
-		formData.append('question', question());
-		formData.append('use_rag', useRag() ? 'on' : 'off');
-		formData.append('clear', 'false');
-
 		const res = await fetch('/api/question', {
 			method: 'POST',
-			body: formData,
+			data: {
+				question: question(),
+				use_rag: useRag() ? 'on' : 'off',
+				clear: 'false',
+			},
+			headers: { 'Content-Type': 'application/json' },
 		});
 		const data = await res.json();
 
@@ -79,14 +79,14 @@ function AssistPage() {
 	const handleClear = async () => {
 		startLoading();
 
-		const formData = new FormData();
-		formData.append('question', '');
-		formData.append('use_rag', useRag() ? 'on' : 'off');
-		formData.append('clear', 'true');
-
 		const res = await fetch('/api/question', {
 			method: 'POST',
-			body: formData,
+			data: {
+				question: '',
+				use_rag: useRag() ? 'on' : 'off',
+				clear: 'true',
+			},
+			headers: { 'Content-Type': 'application/json' },
 		});
 		const data = await res.json();
 
@@ -119,13 +119,13 @@ function AssistPage() {
 			note += `## Q${idx + 1}\n${q}\n\n## A${idx + 1}\n${a}\n\n`;
 		});
 
-		const formData = new FormData();
-		formData.append('filename', filename);
-		formData.append('content', note);
-
 		const res = await fetch('/api/files', {
 			method: 'POST',
-			body: formData,
+			data: {
+				filename,
+				content: note,
+			},
+			headers: { 'Content-Type': 'application/json' },
 		});
 
 		if (!res.ok) {
@@ -135,7 +135,7 @@ function AssistPage() {
 		setSaveSuccess(true);
 		setTimeout(() => setSaveSuccess(false), 5000);
 
-		fetchPending();
+		getApplicationData(true);
 	};
 
 	const renderHistoryEntry = entry => (

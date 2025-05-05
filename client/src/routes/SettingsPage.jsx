@@ -44,14 +44,17 @@ function SettingsPage() {
 	async function saveSettings() {
 		setLoading(true);
 
-		const formData = new FormData();
-		formData.append('chat_model', chatModel());
-		formData.append('embedding_model', embeddingModel());
-		formData.append('temperature', temperature());
-		formData.append('github_url', githubUrl());
-		formData.append('github_access_token', githubAccessToken());
-
-		await fetch('/api/settings', { method: 'PUT', body: formData });
+		await fetch('/api/settings', {
+			method: 'PUT',
+			data: {
+				chat_model: chatModel(),
+				embedding_model: embeddingModel(),
+				temperature: temperature(),
+				github_url: githubUrl(),
+				github_access_token: githubAccessToken(),
+			},
+			headers: { 'Content-Type': 'application/json' },
+		});
 		setLoading(false);
 		setSuccess(true);
 		await fetchSettings();

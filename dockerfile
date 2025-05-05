@@ -17,7 +17,7 @@ COPY client/ /app/
 RUN npm run build
 
 # Use a base Python image
-FROM python:3.9-slim
+FROM node:20
 
 # Set the working directory
 WORKDIR /app
@@ -26,9 +26,8 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y git
 
 # Copy requirements and install dependencies
-COPY server/requirements.txt /app
-RUN pip install --no-cache-dir --upgrade -r ./requirements.txt
-RUN pip install --no-cache-dir "fastapi[standard]" uvicorn
+COPY server/package.json server/package-lock.json /app/
+RUN npm install
 
 # Copy the rest of the application code
 COPY server/src /app
@@ -40,4 +39,4 @@ COPY --from=build /app/dist /app/client
 EXPOSE 12345
 
 # Run the application with uvicorn
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "12345"]
+CMD ["npm", "run", "start"]
