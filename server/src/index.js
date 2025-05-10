@@ -6,10 +6,10 @@ import bodyParser from 'body-parser';
 import crypto from 'crypto';
 import simpleGit from 'simple-git';
 
-import CustomDocumentChatModel, { DATA_DIR, DATA_FILES_DIR } from './utils/model.js';
+import CustomDocumentChatModel, { DATA_DIR, DB_PATH } from './utils/model.js';
 import FilesDataModel from './models/files.js';
 import TagsDataModel from './models/tags.js';
-import { loadConfig } from './utils/config.js';
+import { loadConfig, saveConfig } from './utils/config.js';
 import { BASE_PATH } from './utils/getPath.js';
 
 const app = express();
@@ -22,32 +22,20 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/assets', express.static(path.join(BASE_PATH, 'client/assets/')));
 
 // --- Config ---
-const CONFIG_PATH = path.join(BASE_PATH, 'config.json');
-const DATA_TAG_FILE = path.join(DATA_DIR, 'tags.json');
 const DATA_FILES_SYNC_DIR = path.join(DATA_DIR, 'github');
 
-if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-if (!fs.existsSync(DATA_FILES_DIR)) {
-    fs.mkdirSync(DATA_FILES_DIR, { recursive: true });
-}
 if (!fs.existsSync(DATA_FILES_SYNC_DIR)) {
     fs.mkdirSync(DATA_FILES_SYNC_DIR, { recursive: true });
-}
-if (!fs.existsSync(DATA_TAG_FILE)) {
-    fs.writeFileSync(DATA_TAG_FILE, JSON.stringify({}));
 }
 
 const customDocumentChatModel = new CustomDocumentChatModel({
     refresh: true
 });
-const tagsModel = new TagsDataModel(DATA_TAG_FILE);
-const filesModel = new FilesDataModel(DATA_FILES_DIR, tagsModel);
+const tagsModel = new TagsDataModel(DB_PATH);
+const filesModel = new FilesDataModel(DB_PATH);
 
 // Load or create config
-let config = loadConfig();
-
+let config = await loadConfig();
 
 // --- Utility ---
 function getPendingStatus() {
@@ -79,7 +67,6 @@ async function syncWithGithub(localFiles) {
     }
 
     const syncDirectory = DATA_FILES_SYNC_DIR;
-    const dataDirectory = DATA_FILES_DIR;
     const repositoryUrl = (config.githubUrl || '').replace('https://', '');
     const accessToken = config.githubAccessToken || '';
 
@@ -167,7 +154,7 @@ app.post('/api/question', async (req, res) => {
 
 app.get('/api/files', async (req, res) => {
     // Calculate checksum and sync logic
-    let files = filesModel.getFiles();
+    let files = await filesModel.getFiles();
 
     // Check if the correct config is set to sync
     if (config.githubUrl && config.githubAccessToken) {
@@ -181,65 +168,65 @@ app.get('/api/files', async (req, res) => {
             await syncWithGithub(files);
 
             // Get files again after sync
-            files = filesModel.getFiles();
+            files = await filesModel.getFiles();
         } else {
             config.filesChecksum = checksum;
         }
 
         // Write updated config to file
-        fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 4));
+        await saveConfig(config);
     }
 
     res.json({ files });
 });
 
 
-app.post('/api/files', (req, res) => {
+app.post('/api/files', async (req, res) => {
     const { filename, content } = req.body;
 
-    filesModel.add(filename, content);
+    await filesModel.add(filename, content);
     customDocumentChatModel.lastDocumentChange = new Date();
 
     res.json({ success: true, filename });
 });
 
-app.post('/api/files/upload', upload.array('files'), (req, res) => {
-    req.files.forEach(file => {
-        filesModel.add(file.originalname, file.buffer);
-    });
+app.post('/api/files/upload', upload.array('files'), async (req, res) => {
+    for (const file of req.files) {
+        await filesModel.add(file.originalname, file.buffer.toString('utf-8'));
+    }
 
     customDocumentChatModel.lastDocumentChange = new Date();
 
-    const updatedFiles = filesModel.getFiles();
+    const updatedFiles = await filesModel.getFiles();
     res.json({ files: updatedFiles });
 });
 
-app.put('/api/files/:filename', (req, res) => {
+app.put('/api/files/:filename', async (req, res) => {
     const oldFilename = req.params.filename;
     const filename = req.body.filename;
     const content = req.body.content;
 
-    filesModel.update(oldFilename, filename, content);
+    await filesModel.update(oldFilename, filename, content);
     customDocumentChatModel.lastDocumentChange = new Date();
     res.json({ success: true, filename: filename });
 });
 
-app.delete('/api/files/:filename', (req, res) => {
+app.delete('/api/files/:filename', async (req, res) => {
     const filename = req.params.filename;
 
-    filesModel.delete(filename);
-    tagsModel.removeFile(filename);
+    await filesModel.delete(filename);
+    await tagsModel.removeFile(filename);
 
     customDocumentChatModel.lastDocumentChange = new Date();
-    const updatedFiles = filesModel.getFiles();
+    const updatedFiles = await filesModel.getFiles();
     res.json({ files: updatedFiles });
 });
 
-app.post('/api/files/reload', (req, res) => {
+app.post('/api/files/reload', async (req, res) => {
     customDocumentChatModel.loadModel();
     customDocumentChatModel.lastUpdated = new Date();
 
-    const updatedFiles = filesModel.getFiles();
+    const updatedFiles = await filesModel.getFiles();
     res.json({ files: updatedFiles });
 });
 
@@ -250,7 +237,9 @@ app.post('/api/files/enrich', async (req, res) => {
     let relatedNotes = [];
 
     if (relatedFiles.length > 0) {
-        relatedNotes = relatedFiles.map(file => filesModel.getFileContent(file));
+        for (const file of relatedFiles) {
+            relatedNotes.push(await filesModel.getFileContent(file));
+        }
     }
 
     const enrichedContent = await customDocumentChatModel.enrich(content, relatedNotes);
@@ -259,48 +248,39 @@ app.post('/api/files/enrich', async (req, res) => {
 
 // --- Tags Management ---
 
-app.get('/api/tags', (req, res) => {
-    const tags = tagsModel.getTags();
+app.get('/api/tags', async (req, res) => {
+    const tags = await tagsModel.getTags();
     res.json(tags);
 });
 
-app.post('/api/tags/:item', (req, res) => {
+app.post('/api/tags/:item', async (req, res) => {
     const item = req.params.item;
     const tag = req.body.tag;
 
-    tagsModel.add(item, tag);
+    await tagsModel.add(item, tag);
 
-    const tags = tagsModel.getTags();
+    const tags = await tagsModel.getTags();
     res.json({ tags });
 });
 
-app.delete('/api/tags/:item', (req, res) => {
+app.delete('/api/tags/:item', async (req, res) => {
     const item = req.params.item;
     const tag = req.body.tag;
 
-    tagsModel.removeTag(item, tag);
+    await tagsModel.removeTag(item, tag);
 
-    const tags = tagsModel.getTags();
+    const tags = await tagsModel.getTags();
     res.json({ tags });
 });
 
 // --- Settings Management ---
 
-app.get('/api/settings', (req, res) => {
-    if (!fs.existsSync(CONFIG_PATH)) {
-        return res.json({
-            chatModel: customDocumentChatModel.chatModel,
-            embeddingModel: customDocumentChatModel.embeddingModel,
-            temperature: customDocumentChatModel.temperature,
-            githubUrl: "",
-            githubAccessToken: "",
-        });
-    }
-    const data = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
-    res.json(data);
+app.get('/api/settings', async (req, res) => {
+    config = await loadConfig();
+    res.json(config);
 });
 
-app.put('/api/settings', (req, res) => {
+app.put('/api/settings', async (req, res) => {
     const {
         chatModel = "gemma3:1b",
         embeddingModel = "gemma3:1b",
@@ -327,7 +307,7 @@ app.put('/api/settings', (req, res) => {
         githubAccessToken,
         filesChecksum: config.filesChecksum,
     };
-    fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 4));
+    await saveConfig(config);
     res.json(config);
 });
 

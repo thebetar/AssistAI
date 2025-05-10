@@ -21,14 +21,12 @@ function NotesPage() {
 
 		const data = await response.json();
 
+		if (!data || !data.files) {
+			return;
+		}
+
 		// Remove file extension from names
-		const files = data.files.map(file => {
-			const name = file.name.split('.').slice(0, -1).join('.');
-			return {
-				...file,
-				name,
-			};
-		});
+		const files = data.files;
 
 		setNotes(files);
 

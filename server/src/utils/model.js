@@ -5,16 +5,24 @@ import { OllamaEmbeddings, ChatOllama } from '@langchain/ollama'
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
-import { DirectoryLoader } from "langchain/document_loaders/fs/directory";
-import { TextLoader } from "langchain/document_loaders/fs/text";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { FaissStore } from '@langchain/community/vectorstores/faiss';
 import { createRetrievalChain } from "langchain/chains/retrieval";
+import sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
 
 import { BASE_PATH } from './getPath.js'
 
 export const DATA_DIR = path.join(BASE_PATH, '..', 'data');
-export const DATA_FILES_DIR = path.join(DATA_DIR, 'files');
+export const DB_PATH = path.join(process.cwd(), 'data', 'files.db');
+
+if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+if (!fs.existsSync(DB_PATH)) {
+    fs.mkdirSync(DB_PATH, { recursive: true });
+}
 
 class CustomDocumentChatModel {
     constructor({ chatModel = 'gemma3:1b', embeddingModel = "mxbai-embed-large", temperature = 0.1, silent = false, refresh = false }) {
@@ -29,6 +37,11 @@ class CustomDocumentChatModel {
         this.refresh = refresh;
 
         this.ready = false;
+
+        this.dbPromise = open({
+            filename: DB_PATH,
+            driver: sqlite3.Database
+        });
     }
 
     async init() {
@@ -196,18 +209,31 @@ class CustomDocumentChatModel {
     }
 
     async loadDocuments() {
-        const loader = new DirectoryLoader(DATA_FILES_DIR, {
-            '.md': (filePath) => new TextLoader(filePath),
-        });
-        this.documents = await loader.load();
+        // Load all files from the database as documents
+        const db = await this.dbPromise;
+        const rows = await db.all('SELECT name, content FROM files');
+        this.documents = rows.map(row => ({
+            metadata: { source: row.name },
+            pageContent: row.content
+        }));
 
         const splitter = new RecursiveCharacterTextSplitter({
             chunkSize: 512,
             chunkOverlap: 50,
-        })
+        });
         this.documents = await splitter.splitDocuments(this.documents);
 
         this.documents = this.documents.filter((doc) => doc.pageContent.trim().length);
+
+        if (this.documents.length === 0) {
+            // Set small sample data if no documents are found
+            this.documents = [
+                {
+                    metadata: { source: 'Empty document' },
+                    pageContent: 'Filler document, don\'t use it. This is a test document.'
+                }
+            ];
+        }
 
         return this.documents;
     }
@@ -261,7 +287,7 @@ class CustomDocumentChatModel {
 
         fs.writeFileSync(vectorStoreCreatedPath, JSON.stringify({
             timestamp: new Date().getTime(),
-            documents: this.documents.map((doc) => doc.pageContent),
+            documents: documents.map((doc) => doc.pageContent),
             checksum: this.__getDocumentChecksum()
         }));
 

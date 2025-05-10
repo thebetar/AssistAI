@@ -1,108 +1,96 @@
-import fs from 'fs';
-import path from 'path';
+import sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
+import { v4 as uuidv4 } from 'uuid';
 
 class FilesDataModel {
-    constructor(filesDir, tagsModel) {
-        this.filesDir = filesDir;
+    constructor(dbPath, tagsModel) {
         this.tagsModel = tagsModel;
-
-        if (!fs.existsSync(this.filesDir)) {
-            fs.mkdirSync(this.filesDir, { recursive: true });
-        }
+        this.dbPromise = open({
+            filename: dbPath,
+            driver: sqlite3.Database
+        }).then(async (db) => {
+            await db.exec(`
+                CREATE TABLE IF NOT EXISTS files (
+                    id TEXT PRIMARY KEY,
+                    name TEXT UNIQUE,
+                    content TEXT
+                )
+            `);
+            return db;
+        });
     }
 
-    getFiles(sort = false) {
-        if (!fs.existsSync(this.filesDir)) {
-            return [];
-        }
-
-        const files = fs.readdirSync(this.filesDir).filter(file => fs.statSync(path.join(this.filesDir, file)).isFile());
-
+    async getFiles(sort = false) {
+        const db = await this.dbPromise;
+        // Join files and tags, aggregate tags as array
+        const rows = await db.all(`
+            SELECT 
+                f.id, 
+                f.name, 
+                f.content, 
+                GROUP_CONCAT(t.tag, '|||') as tags
+            FROM files f
+            LEFT JOIN tags t ON t.file_id = f.id
+            GROUP BY f.id
+        `);
+        let files = rows.map(row => ({
+            id: row.id,
+            name: row.name,
+            content: row.content,
+            tags: row.tags ? row.tags.split('|||') : []
+        }));
         if (sort) {
-            files.sort();
+            files = files.sort((a, b) => a.name.localeCompare(b.name));
         }
-
-        return this.populateFiles(files);
+        return files;
     }
 
-    getFileContent(file) {
-        // If file does not contain .md, add it
-        if (!file.endsWith('.md')) {
-            file += '.md';
+    async getFileContent(identifier) {
+        const db = await this.dbPromise;
+        let row;
+        if (identifier.length === 36 && identifier.match(/^[0-9a-f-]+$/i)) {
+            row = await db.get('SELECT content FROM files WHERE id = ?', identifier);
+        } else {
+            row = await db.get('SELECT content FROM files WHERE name = ?', identifier);
         }
+        return row ? row.content : null;
+    }
 
-        const filePath = path.join(this.filesDir, file);
-
-        if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
+    async add(filename, content) {
+        const db = await this.dbPromise;
+        const id = uuidv4();
+        try {
+            await db.run('INSERT INTO files (id, name, content) VALUES (?, ?, ?)', id, filename, content);
+            return { id, name: filename, content };
+        } catch (e) {
             return null;
         }
-
-        return fs.readFileSync(filePath, 'utf-8');
     }
 
-    populateFiles(files) {
-        const tags = this.tagsModel.getTags();
-        const populatedFiles = [];
-
-        for (const file of files) {
-            const content = this.getFileContent(file);
-            const fileTags = tags[file] || [];
-
-            populatedFiles.push({
-                name: file,
-                content,
-                tags: fileTags
-            });
+    async update(oldIdentifier, filename, content) {
+        const db = await this.dbPromise;
+        let row;
+        if (oldIdentifier.length === 36 && oldIdentifier.match(/^[0-9a-f-]+$/i)) {
+            row = await db.get('SELECT id FROM files WHERE id = ?', oldIdentifier);
+        } else {
+            row = await db.get('SELECT id FROM files WHERE name = ?', oldIdentifier);
         }
-
-        return populatedFiles;
+        if (!row) return null;
+        await db.run('UPDATE files SET name = ?, content = ? WHERE id = ?', filename, content, row.id);
+        return { id: row.id, name: filename, content };
     }
 
-    add(filename, content) {
-        const filePath = path.join(this.filesDir, `${filename}.md`);
-
-        if (fs.existsSync(filePath)) {
-            return null;
+    async delete(identifier) {
+        const db = await this.dbPromise;
+        let row;
+        if (identifier.length === 36 && identifier.match(/^[0-9a-f-]+$/i)) {
+            row = await db.get('SELECT id, name FROM files WHERE id = ?', identifier);
+        } else {
+            row = await db.get('SELECT id, name FROM files WHERE name = ?', identifier);
         }
-
-        fs.writeFileSync(filePath, content, 'utf-8');
-
-        return {
-            name: filename,
-            content,
-        }
-    }
-
-    update(oldFilename, filename, content) {
-        let filePath = path.join(this.filesDir, `${oldFilename}.md`);
-
-        if (!fs.existsSync(filePath)) {
-            return null;
-        }
-
-        if (oldFilename !== filename) {
-            fs.unlinkSync(filePath);
-            filePath = path.join(this.filesDir, `${filename}.md`);
-        }
-
-        fs.writeFileSync(filePath, content, 'utf-8');
-
-        return {
-            name: filename,
-            content,
-        }
-    }
-
-    delete(filename) {
-        const filePath = path.join(this.filesDir, `${filename}.md`);
-
-        if (!fs.existsSync(filePath)) {
-            return null;
-        }
-
-        fs.unlinkSync(filePath);
-
-        return filename;
+        if (!row) return null;
+        await db.run('DELETE FROM files WHERE id = ?', row.id);
+        return row.name;
     }
 }
 
