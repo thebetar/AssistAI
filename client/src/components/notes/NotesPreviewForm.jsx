@@ -86,7 +86,10 @@ function NotesPreviewForm({ note, close, fetchNotes, notes, update = false }) {
 	}
 
 	createEffect(() => {
-		const filtered = notes.filter(note => note.name.toLowerCase().includes(relatedNoteInput().toLowerCase()));
+		const selectedNames = new Set(relatedNotes().map(note => note.name));
+		const filtered = notes.filter(
+			note => note.name.toLowerCase().includes(relatedNoteInput().toLowerCase()) && !selectedNames.has(note.name),
+		);
 		setFilteredRelatedNotes(filtered);
 	});
 
@@ -126,7 +129,7 @@ function NotesPreviewForm({ note, close, fetchNotes, notes, update = false }) {
 				class="w-full mb-3 px-3 py-2 rounded bg-zinc-800 border border-zinc-700 text-white min-h-96"
 			/>
 
-			<div class="flex gap-2">
+			<div class="flex gap-2 mt-4">
 				<button
 					class="px-4 py-2 rounded bg-green-600 text-white font-semibold hover:bg-green-700 transition cursor-pointer"
 					onClick={save}

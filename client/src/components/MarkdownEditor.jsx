@@ -1,32 +1,53 @@
-import { createSignal, onMount, createEffect } from 'solid-js';
+import { onMount, onCleanup, createEffect } from 'solid-js';
+import EasyMDE from 'easymde';
+import hljs from 'highlight.js';
+
+import 'highlight.js/styles/github.css'; // You can choose other styles too
+import 'easymde/dist/easymde.min.css';
+import './MarkdownEditor.css';
 
 function MarkdownEditor(props) {
-	const [value, setValue] = createSignal(props.value || '');
-	let textareaRef;
+	let editorRef;
+	let easyMDE;
+	let styleTag;
 
-	const resize = () => {
-		if (textareaRef) {
-			textareaRef.style.height = 'auto';
-			textareaRef.style.height = textareaRef.scrollHeight + 'px';
-		}
-	};
+	onMount(() => {
+		easyMDE = new EasyMDE({
+			element: editorRef,
+			initialValue: props.value || '',
+			autoDownloadFontAwesome: false,
+			spellChecker: false,
+			status: false,
+			renderingConfig: {
+				codeSyntaxHighlighting: true,
+			},
+			toolbar: [],
+		});
 
-	onMount(resize); // Resize on mount
-	createEffect(() => {
-		resize(); // Resize on content change
-		props.onInput?.(value()); // Emit updated value
+		easyMDE.codemirror.on('change', () => {
+			const val = easyMDE.value();
+			props.onInput?.(val);
+		});
 	});
 
-	return (
-		<textarea
-			ref={el => (textareaRef = el)}
-			value={value()}
-			onInput={e => setValue(e.currentTarget.value)}
-			style={{ overflow: 'hidden', resize: 'none' }}
-			placeholder={props.placeholder}
-			class={props.class}
-		/>
-	);
+	createEffect(() => {
+		if (easyMDE && props.value !== undefined && easyMDE.value() !== props.value) {
+			easyMDE.value(props.value);
+		}
+	});
+
+	onCleanup(() => {
+		if (easyMDE) {
+			easyMDE.toTextArea();
+			easyMDE = null;
+		}
+		if (styleTag) {
+			styleTag.remove();
+			styleTag = null;
+		}
+	});
+
+	return <textarea ref={el => (editorRef = el)} placeholder={props.placeholder} class={props.class} />;
 }
 
 export default MarkdownEditor;

@@ -1,0 +1,25 @@
+.CodeMirror {
+	background-color: #27272a !important;
+	color: #fff !important;
+}
+.CodeMirror-cursor {
+	border-left: 1px solid #ffffffcf !important;
+}
+.editor-toolbar a,
+.editor-toolbar i {
+	color: #fff !important;
+}
+.editor-toolbar a.active,
+.editor-toolbar a:hover {
+	background: #3f3f46 !important; /* Tailwind bg-zinc-700 */
+}
+.CodeMirror-gutters {
+	background-color: #27272a !important;
+	border-right: 1px solid #3f3f46 !important;
+}
+.CodeMirror-lines {
+	color: #fff !important;
+}
+.CodeMirror-selected {
+	background: #52525b !important; /* Tailwind bg-zinc-600 */
+}

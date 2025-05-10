@@ -1,5 +1,5 @@
 # Build the Solid.js app
-FROM node:20 AS build
+FROM node:22-slim AS build
 
 # Set the working directory
 WORKDIR /app
@@ -17,13 +17,14 @@ COPY client/ /app/
 RUN npm run build
 
 # Use a base Python image
-FROM node:20
+FROM node:22-slim
 
 # Set the working directory
 WORKDIR /app
 
 # Install git for syncing
-RUN apt-get update && apt-get install -y git
+RUN apt-get update && apt-get install -y --no-install-recommends git \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install dependencies
 COPY server/package.json server/package-lock.json /app/
@@ -39,4 +40,4 @@ COPY --from=build /app/dist /app/client
 EXPOSE 12345
 
 # Run the application with uvicorn
-CMD ["npm", "run", "start"]
+CMD ["node", "index.js"]
