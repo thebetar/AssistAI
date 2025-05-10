@@ -17,7 +17,7 @@ export const DATA_DIR = path.join(BASE_PATH, '..', 'data');
 export const DATA_FILES_DIR = path.join(DATA_DIR, 'files');
 
 class CustomDocumentChatModel {
-    constructor(chatModel = 'gemma3:1b', embeddingModel = "mxbai-embed-large", temperature = 0.1, silent = false, refresh = false) {
+    constructor({ chatModel = 'gemma3:1b', embeddingModel = "mxbai-embed-large", temperature = 0.1, silent = false, refresh = false }) {
         this.logFile = path.join(DATA_DIR, 'log.txt');
 
         this.chatModel = chatModel;
@@ -92,7 +92,8 @@ class CustomDocumentChatModel {
 
         this.model = new ChatOllama({
             model: this.chatModel,
-            temperature: this.temperature
+            temperature: this.temperature,
+            baseUrl: process.env.OLLAMA_URL || 'http://localhost:11434',
         })
 
         if (!this.silent) {
@@ -169,6 +170,7 @@ class CustomDocumentChatModel {
 
         this.embeddings = new OllamaEmbeddings({
             model: this.embeddingModel,
+            baseUrl: process.env.OLLAMA_URL || 'http://localhost:11434',
         });
 
         await this.loadVectorStore(this.refresh);

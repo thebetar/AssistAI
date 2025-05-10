@@ -1,8 +1,5 @@
 import { onMount, onCleanup, createEffect } from 'solid-js';
 import EasyMDE from 'easymde';
-import hljs from 'highlight.js';
-
-import 'highlight.js/styles/github.css'; // You can choose other styles too
 import 'easymde/dist/easymde.min.css';
 import './MarkdownEditor.css';
 
@@ -18,10 +15,8 @@ function MarkdownEditor(props) {
 			autoDownloadFontAwesome: false,
 			spellChecker: false,
 			status: false,
-			renderingConfig: {
-				codeSyntaxHighlighting: true,
-			},
 			toolbar: [],
+			placeholder: props.placeholder,
 		});
 
 		easyMDE.codemirror.on('change', () => {

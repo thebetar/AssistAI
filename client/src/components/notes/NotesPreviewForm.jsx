@@ -126,6 +126,7 @@ function NotesPreviewForm({ note, close, fetchNotes, notes, update = false }) {
 			<MarkdownEditor
 				value={noteContent()}
 				onInput={e => setNoteContent(e)}
+				placeholder="Write your note here..."
 				class="w-full mb-3 px-3 py-2 rounded bg-zinc-800 border border-zinc-700 text-white min-h-96"
 			/>
 

@@ -30,5 +30,9 @@
     ],
     "Activation function": [
         "machinelearning"
+    ],
+    "Big O": [
+        "math",
+        "math"
     ]
 }

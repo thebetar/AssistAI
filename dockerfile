@@ -31,7 +31,7 @@ COPY server/package.json server/package-lock.json /app/
 RUN npm install
 
 # Copy the rest of the application code
-COPY server/src /app
+COPY server /app
 
 # Copy the built Solid.js app from the previous stage
 COPY --from=build /app/dist /app/client
@@ -40,4 +40,4 @@ COPY --from=build /app/dist /app/client
 EXPOSE 12345
 
 # Run the application with uvicorn
-CMD ["node", "index.js"]
+CMD ["node", "src/index.js"]

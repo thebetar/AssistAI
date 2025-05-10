@@ -26,7 +26,22 @@ const CONFIG_PATH = path.join(BASE_PATH, 'config.json');
 const DATA_TAG_FILE = path.join(DATA_DIR, 'tags.json');
 const DATA_FILES_SYNC_DIR = path.join(DATA_DIR, 'github');
 
-const customDocumentChatModel = new CustomDocumentChatModel();
+if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+if (!fs.existsSync(DATA_FILES_DIR)) {
+    fs.mkdirSync(DATA_FILES_DIR, { recursive: true });
+}
+if (!fs.existsSync(DATA_FILES_SYNC_DIR)) {
+    fs.mkdirSync(DATA_FILES_SYNC_DIR, { recursive: true });
+}
+if (!fs.existsSync(DATA_TAG_FILE)) {
+    fs.writeFileSync(DATA_TAG_FILE, JSON.stringify({}));
+}
+
+const customDocumentChatModel = new CustomDocumentChatModel({
+    refresh: true
+});
 const tagsModel = new TagsDataModel(DATA_TAG_FILE);
 const filesModel = new FilesDataModel(DATA_FILES_DIR, tagsModel);
 

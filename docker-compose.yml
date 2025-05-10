@@ -5,10 +5,11 @@ services:
         build: .
         container_name: assist-ai
         volumes:
-            - ./server/src/data:/app/data
+            - ./server/data:/app/data
             - ./server/src/config.json:/app/config.json
         ports:
             - '12345:12345'
-        environment:
-            - OLLAMA_URL=http://host.docker.internal:11434
+        # environment:
+        #     - OLLAMA_URL=http://host.docker.internal:11434
+        network_mode: host
         restart: always
