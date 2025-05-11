@@ -13,8 +13,8 @@ import { open } from 'sqlite';
 
 import { BASE_PATH } from './getPath.js'
 
-export const DATA_DIR = path.join(BASE_PATH, '..', 'data');
-export const DB_PATH = path.join(process.cwd(), 'data', 'files.db');
+export const DATA_DIR = path.join(BASE_PATH, 'data');
+export const DB_PATH = path.join(DATA_DIR, 'files.db');
 
 if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });

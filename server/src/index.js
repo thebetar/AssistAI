@@ -22,6 +22,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Serve static files
 app.use('/assets', express.static(path.join(BASE_PATH, 'client/assets/')));
 
+// Serve static files for client (not dist)
+app.use(express.static(path.join(BASE_PATH, 'client')));
+
 // --- Config ---
 const DATA_FILES_DIR = path.join(DATA_DIR, 'files');
 const DATA_FILES_SYNC_DIR = path.join(DATA_DIR, 'github');
@@ -35,7 +38,7 @@ if (!fs.existsSync(DATA_FILES_SYNC_DIR)) {
 }
 
 const customDocumentChatModel = new CustomDocumentChatModel({
-    refresh: false
+    refresh: false,
 });
 const tagsModel = new TagsDataModel(DB_PATH);
 const filesModel = new FilesDataModel(DB_PATH);
@@ -63,7 +66,6 @@ function getPendingStatus() {
     return false;
 }
 
-
 let syncFilesModel = null;
 
 async function syncWithGithub(localFiles) {
@@ -81,7 +83,7 @@ async function syncWithGithub(localFiles) {
     if (!fs.existsSync(syncDirectory)) {
         await simpleGit().clone(
             `https://${encodeURIComponent(accessToken)}:x-oauth-basic@${repositoryUrl}`,
-            syncDirectory
+            syncDirectory,
         );
         repo = simpleGit(syncDirectory);
         await repo.checkout('master');
@@ -136,16 +138,16 @@ app.get('/api/pending', (req, res) => {
 
 app.get('/api/history', (req, res) => {
     if (!customDocumentChatModel.history) {
-        return res.status(404).json({ error: "No chat history available" });
+        return res.status(404).json({ error: 'No chat history available' });
     }
 
     res.json({ history: customDocumentChatModel.history });
 });
 
 app.post('/api/question', async (req, res) => {
-    const question = req.body.question || "";
-    const use_rag = req.body.use_rag === "on";
-    const clear = req.body.clear === "true";
+    const question = req.body.question || '';
+    const use_rag = req.body.use_rag === 'on';
+    const clear = req.body.clear === 'true';
 
     const response = await customDocumentChatModel.invoke(question, use_rag, clear);
 
@@ -186,7 +188,6 @@ app.get('/api/files', async (req, res) => {
 
     res.json({ files });
 });
-
 
 app.post('/api/files', async (req, res) => {
     const { filename, content } = req.body;
@@ -289,11 +290,11 @@ app.get('/api/settings', async (req, res) => {
 
 app.put('/api/settings', async (req, res) => {
     const {
-        chatModel = "gemma3:1b",
-        embeddingModel = "gemma3:1b",
+        chatModel = 'gemma3:1b',
+        embeddingModel = 'gemma3:1b',
         temperature = 0.1,
-        githubUrl = "",
-        githubAccessToken = "",
+        githubUrl = '',
+        githubAccessToken = '',
     } = req.body;
 
     customDocumentChatModel.chatModel = chatModel;
@@ -333,7 +334,7 @@ app.get('/api/export', async (req, res) => {
     for (const file of files) {
         const filename = file.name;
         const content = file.content;
-        fs.writeFileSync(path.join(filesDir, filename), content, 'utf-8');
+        fs.writeFileSync(path.join(filesDir, `${filename}.md`), content, 'utf-8');
     }
 
     // Create a zip file
@@ -345,7 +346,7 @@ app.get('/api/export', async (req, res) => {
     archive.finalize();
 
     output.on('close', () => {
-        res.download(zipFilePath, `files_${new Date().toISOString().slice(0, 10)}.zip`, (err) => {
+        res.download(zipFilePath, `files_${new Date().toISOString().slice(0, 10)}.zip`, err => {
             if (err) {
                 console.error(err);
             }
@@ -354,14 +355,20 @@ app.get('/api/export', async (req, res) => {
     });
 });
 
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok' });
+});
+
 // --- Catch-all for client-side routing ---
 app.use((req, res, next) => {
     const fullPath = req.path;
+
     if (fullPath.startsWith('/api/') || fullPath.startsWith('/assets/')) {
         return next();
     }
-    // Serve index.html for SPA
-    res.sendFile(path.join(BASE_PATH, 'client/index.html'), (err) => {
+
+    // Serve index.html for SPA (from client/)
+    res.sendFile(path.join(BASE_PATH, 'client/index.html'), err => {
         if (err) {
             res.status(err.status).end();
         }
