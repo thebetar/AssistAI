@@ -102,7 +102,8 @@ async function syncWithGithub(localFiles) {
         for (const syncFile of syncFiles) {
             const filename = syncFile.name;
             const content = syncFile.content;
-            fs.writeFileSync(path.join(dataDirectory, filename), content, 'utf-8');
+
+            filesModel.add(filename, content);
         }
     }
 
@@ -164,7 +165,7 @@ app.get('/api/files', async (req, res) => {
             // Update checksum for use in next sync
             config.filesChecksum = checksum;
 
-            // Sync using github url if provided
+            // Sync using github url if provided (pushes and pulls changes)
             await syncWithGithub(files);
 
             // Get files again after sync
@@ -201,21 +202,21 @@ app.post('/api/files/upload', upload.array('files'), async (req, res) => {
     res.json({ files: updatedFiles });
 });
 
-app.put('/api/files/:filename', async (req, res) => {
-    const oldFilename = req.params.filename;
+app.put('/api/files/:id', async (req, res) => {
+    const fileId = req.params.id;
     const filename = req.body.filename;
     const content = req.body.content;
 
-    await filesModel.update(oldFilename, filename, content);
+    await filesModel.update(fileId, filename, content);
     customDocumentChatModel.lastDocumentChange = new Date();
     res.json({ success: true, filename: filename });
 });
 
-app.delete('/api/files/:filename', async (req, res) => {
-    const filename = req.params.filename;
+app.delete('/api/files/:id', async (req, res) => {
+    const fileId = req.params.id;
 
-    await filesModel.delete(filename);
-    await tagsModel.removeFile(filename);
+    await filesModel.delete(fileId);
+    await tagsModel.removeFile(fileId);
 
     customDocumentChatModel.lastDocumentChange = new Date();
     const updatedFiles = await filesModel.getFiles();
@@ -253,21 +254,21 @@ app.get('/api/tags', async (req, res) => {
     res.json(tags);
 });
 
-app.post('/api/tags/:item', async (req, res) => {
-    const item = req.params.item;
+app.post('/api/tags/:id', async (req, res) => {
+    const fileId = req.params.id;
     const tag = req.body.tag;
 
-    await tagsModel.add(item, tag);
+    await tagsModel.add(fileId, tag);
 
     const tags = await tagsModel.getTags();
     res.json({ tags });
 });
 
-app.delete('/api/tags/:item', async (req, res) => {
-    const item = req.params.item;
+app.delete('/api/tags/:id', async (req, res) => {
+    const fileId = req.params.id;
     const tag = req.body.tag;
 
-    await tagsModel.removeTag(item, tag);
+    await tagsModel.removeTag(fileId, tag);
 
     const tags = await tagsModel.getTags();
     res.json({ tags });

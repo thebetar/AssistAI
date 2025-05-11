@@ -2,6 +2,8 @@ import { createEffect, createSignal } from 'solid-js';
 import { useParams } from '@solidjs/router';
 
 import PlusSvg from '../../assets/svg/used/plus.svg';
+import UploadSvg from '../../assets/svg/used/upload.svg';
+import NotesUploadModal from './NotesUploadModal';
 
 const STARTS_WITH_FILTER = ['#', '-', 'title:', 'uuid:', 'version:', 'created:', 'tags:'];
 const MAX_PREVIEW_LENGTH = 80;
@@ -9,6 +11,7 @@ const MAX_PREVIEW_LENGTH = 80;
 function NotesList({ notes = [], selectedNote, setSelectedNote, setAddMode }) {
 	const [filter, setFilter] = createSignal('');
 	const [filteredNotes, setFilteredNotes] = createSignal([]);
+	const [showUploadModal, setShowUploadModal] = createSignal(false);
 
 	const params = useParams();
 
@@ -63,13 +66,24 @@ function NotesList({ notes = [], selectedNote, setSelectedNote, setAddMode }) {
 		<aside class="w-80 bg-zinc-800 border-r border-zinc-700 overflow-y-auto h-screen">
 			<div class="flex items-center justify-between px-4 py-5 border-b border-zinc-700">
 				<h2 class="text-xl font-bold">Notes</h2>
-				<button
-					class="p-1 rounded-full hover:bg-zinc-700 transition cursor-pointer"
-					title="Add note"
-					onClick={() => setAddMode(true)}
-				>
-					<img src={PlusSvg} class="w-6 h-6" alt="Add" />
-				</button>
+
+				<div className="flex gap-x-2">
+					<button
+						class="p-1 rounded-full hover:bg-zinc-700 transition cursor-pointer"
+						title="Import notes"
+						onClick={() => setShowUploadModal(true)}
+					>
+						<img src={UploadSvg} class="w-5 h-5" alt="Import" />
+					</button>
+
+					<button
+						class="p-1 rounded-full hover:bg-zinc-700 transition cursor-pointer"
+						title="Add note"
+						onClick={() => setAddMode(true)}
+					>
+						<img src={PlusSvg} class="w-6 h-6" alt="Add" />
+					</button>
+				</div>
 			</div>
 
 			<div class="px-4 py-2 border-b border-zinc-700">
@@ -98,6 +112,8 @@ function NotesList({ notes = [], selectedNote, setSelectedNote, setAddMode }) {
 					</li>
 				))}
 			</ul>
+
+			{showUploadModal() && <NotesUploadModal close={() => setShowUploadModal(false)} />}
 		</aside>
 	);
 }

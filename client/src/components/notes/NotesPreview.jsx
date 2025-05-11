@@ -43,7 +43,7 @@ function NotesPreview({ addMode, setAddMode, fetchNotes, selectedNote, setSelect
 	}
 
 	async function removeTag(note, tag) {
-		await fetch(`/api/tags/${encodeURIComponent(note.name)}`, {
+		await fetch(`/api/tags/${note.id})}`, {
 			method: 'DELETE',
 			body: JSON.stringify({
 				tag: tag,
@@ -69,7 +69,7 @@ function NotesPreview({ addMode, setAddMode, fetchNotes, selectedNote, setSelect
 
 		setLoading(true);
 
-		await fetch(`/api/files/${encodeURIComponent(note.name)}`, { method: 'DELETE' });
+		await fetch(`/api/files/${note.id}`, { method: 'DELETE' });
 		await fetchNotes();
 
 		setLoading(false);

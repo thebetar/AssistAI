@@ -52,6 +52,7 @@ function NotesPreviewForm({ note, close, fetchNotes, notes, update = false }) {
 			...note,
 			name: noteName(),
 			content: noteContent(),
+			tags: [],
 		});
 
 		setLoading(false);
@@ -60,6 +61,8 @@ function NotesPreviewForm({ note, close, fetchNotes, notes, update = false }) {
 	}
 
 	async function enrichNote() {
+		setEnrichLoading(true);
+
 		if (!noteContent().trim()) {
 			return;
 		}
@@ -78,6 +81,7 @@ function NotesPreviewForm({ note, close, fetchNotes, notes, update = false }) {
 		const data = await res.json();
 
 		setEnrichContent(data.enrichedContent);
+		setEnrichLoading(false);
 	}
 
 	function acceptEnrich() {

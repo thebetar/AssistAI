@@ -53,38 +53,70 @@ class TagsDataModel {
 
     async add(fileIdentifier, tag) {
         const db = await this.dbPromise;
-        let fileRow;
-        if (fileIdentifier.length === 36 && fileIdentifier.match(/^[0-9a-f-]+$/i)) {
-            fileRow = await db.get('SELECT id FROM files WHERE id = ?', fileIdentifier);
-        } else {
-            fileRow = await db.get('SELECT id FROM files WHERE name = ?', fileIdentifier);
+
+        try {
+            const fileRow = await db.get('SELECT id FROM files WHERE id = ?', fileIdentifier);
+
+            if (!fileRow) {
+                return;
+            }
+
+            await db.run('INSERT INTO tags (id, file_id, tag) VALUES (?, ?, ?)', uuidv4(), fileRow.id, tag);
+
+            return {
+                id: uuidv4(),
+                file_id: fileRow.id,
+                tag: tag
+            }
+        } catch (error) {
+            console.error('Error adding tag:', error);
+            return null;
         }
-        if (!fileRow) return;
-        await db.run('INSERT INTO tags (id, file_id, tag) VALUES (?, ?, ?)', uuidv4(), fileRow.id, tag);
+
     }
 
     async removeFile(fileIdentifier) {
         const db = await this.dbPromise;
-        let fileRow;
-        if (fileIdentifier.length === 36 && fileIdentifier.match(/^[0-9a-f-]+$/i)) {
-            fileRow = await db.get('SELECT id FROM files WHERE id = ?', fileIdentifier);
-        } else {
-            fileRow = await db.get('SELECT id FROM files WHERE name = ?', fileIdentifier);
+
+        try {
+            const fileRow = await db.get('SELECT id FROM files WHERE id = ?', fileIdentifier);
+
+
+            if (!fileRow) {
+                return;
+            }
+
+            await db.run('DELETE FROM tags WHERE file_id = ?', fileRow.id);
+
+            return {
+                id: fileRow.id
+            }
+        } catch (error) {
+            console.error('Error removing file:', error);
+            return null;
         }
-        if (!fileRow) return;
-        await db.run('DELETE FROM tags WHERE file_id = ?', fileRow.id);
     }
 
     async removeTag(fileIdentifier, tag) {
         const db = await this.dbPromise;
-        let fileRow;
-        if (fileIdentifier.length === 36 && fileIdentifier.match(/^[0-9a-f-]+$/i)) {
-            fileRow = await db.get('SELECT id FROM files WHERE id = ?', fileIdentifier);
-        } else {
-            fileRow = await db.get('SELECT id FROM files WHERE name = ?', fileIdentifier);
+
+        try {
+            const fileRow = await db.get('SELECT id FROM files WHERE id = ?', fileIdentifier);
+
+            if (!fileRow) {
+                return;
+            }
+
+            await db.run('DELETE FROM tags WHERE file_id = ? AND tag = ?', fileRow.id, tag);
+
+            return {
+                id: fileRow.id,
+                tag: tag
+            }
+        } catch (error) {
+            console.error('Error removing tag:', error);
+            return null;
         }
-        if (!fileRow) return;
-        await db.run('DELETE FROM tags WHERE file_id = ? AND tag = ?', fileRow.id, tag);
     }
 }
 
