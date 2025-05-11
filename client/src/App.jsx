@@ -118,7 +118,7 @@ function App(props) {
 
 	return (
 		<div class="flex">
-			<nav class="bg-zinc-900 h-screen w-80 text-white shadow-md z-50">
+			<nav class="bg-zinc-900 h-screen w-80 text-white shadow-md z-50 relative">
 				<header class="text-xl font-semibold px-4 pt-6 pb-4">Assist AI</header>
 
 				<ul>{routes.map(renderNavItem)}</ul>
@@ -126,20 +126,16 @@ function App(props) {
 				<header class="text-xl font-semibold px-4 pt-6 pb-2">Tags</header>
 
 				<ul class="flex flex-col gap-2 px-4">{tags().map(renderTagItem)}</ul>
-			</nav>
 
-			<div className="h-screen w-screen overflow-y-scroll bg-zinc-800 text-white">
 				{/* Pending notification bar */}
 				{pending() && (
-					<div class="px-4 py-2 rounded border border-yellow-300 bg-yellow-100 text-yellow-900 flex items-center justify-between text-sm">
-						<div>
-							<b>Sources have changed.</b> The model needs to reload to include recent changes.
-							<br />
-							<span class="text-xs">Reloading may take a while.</span>
+					<div class="px-4 py-2 rounded border border-yellow-300 bg-yellow-100 text-yellow-900 text-sm absolute bottom-0 left-0 right-0">
+						<div class="mb-2">
+							<b>Sources have changed.</b><br/>The model needs to reload to include recent changes.
 						</div>
 
 						<button
-							class="ml-4 px-4 py-2 rounded bg-yellow-300 text-yellow-900 font-semibold hover:bg-yellow-400 transition disabled:opacity-60 cursor-pointer"
+							class="px-4 py-2 rounded bg-yellow-300 text-yellow-900 font-semibold hover:bg-yellow-400 transition disabled:opacity-60 cursor-pointer w-full"
 							onClick={handleReloadModel}
 							disabled={pendingLoading()}
 						>
@@ -154,7 +150,9 @@ function App(props) {
 						</button>
 					</div>
 				)}
+			</nav>
 
+			<div className="h-screen w-screen overflow-y-scroll bg-zinc-800 text-white">
 				<ApplicationContext.Provider value={getApplicationData}>{props.children}</ApplicationContext.Provider>
 			</div>
 		</div>

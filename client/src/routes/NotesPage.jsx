@@ -72,6 +72,7 @@ function NotesPage() {
 				selectedNote={selectedNote}
 				setSelectedNote={handleSetSelectedNote}
 				setAddMode={setAddMode}
+				fetchNotes={fetchNotes}
 			/>
 
 			{/* Note content */}

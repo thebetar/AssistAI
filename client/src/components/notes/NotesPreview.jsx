@@ -24,7 +24,7 @@ function NotesPreview({ addMode, setAddMode, fetchNotes, selectedNote, setSelect
 
 		const newTag = tag.trim();
 
-		await fetch(`/api/tags/${encodeURIComponent(note.name)}`, {
+		await fetch(`/api/tags/${note.id}`, {
 			method: 'POST',
 			body: JSON.stringify({
 				tag: newTag,

@@ -8,7 +8,7 @@ import NotesUploadModal from './NotesUploadModal';
 const STARTS_WITH_FILTER = ['#', '-', 'title:', 'uuid:', 'version:', 'created:', 'tags:'];
 const MAX_PREVIEW_LENGTH = 80;
 
-function NotesList({ notes = [], selectedNote, setSelectedNote, setAddMode }) {
+function NotesList({ notes = [], selectedNote, setSelectedNote, setAddMode, fetchNotes }) {
 	const [filter, setFilter] = createSignal('');
 	const [filteredNotes, setFilteredNotes] = createSignal([]);
 	const [showUploadModal, setShowUploadModal] = createSignal(false);
@@ -113,7 +113,7 @@ function NotesList({ notes = [], selectedNote, setSelectedNote, setAddMode }) {
 				))}
 			</ul>
 
-			{showUploadModal() && <NotesUploadModal close={() => setShowUploadModal(false)} />}
+			{showUploadModal() && <NotesUploadModal fetchNotes={fetchNotes} close={() => setShowUploadModal(false)} />}
 		</aside>
 	);
 }
