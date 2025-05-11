@@ -38,7 +38,7 @@ function NotesPreviewForm({ note, close, fetchNotes, notes, update = false }) {
 				},
 			});
 		} else {
-			res = await fetch(`/api/files/${note.name}`, {
+			res = await fetch(`/api/files/${note.id}`, {
 				method: 'PUT',
 				body: JSON.stringify({
 					filename: noteName(),

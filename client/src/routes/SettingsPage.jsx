@@ -34,10 +34,10 @@ function SettingsPage() {
 		setChatModel(data?.chat_model || SETTINGS_DEFAULTS.chat_model);
 		setEmbeddingModel(data?.embedding_model || SETTINGS_DEFAULTS.embedding_model);
 		setTemperature(data?.temperature || SETTINGS_DEFAULTS.temperature);
-		setGithubUrl(data?.github_url || SETTINGS_DEFAULTS.github_url);
-		setGithubAccessToken(data?.github_access_token || SETTINGS_DEFAULTS.github_access_token);
+		setGithubUrl(data?.githubUrl || SETTINGS_DEFAULTS.githubUrl);
+		setGithubAccessToken(data?.githubAccessToken || SETTINGS_DEFAULTS.githubAccessToken);
 
-		if (data?.github_url && data?.github_access_token) {
+		if (data?.githubUrl && data?.githubAccessToken) {
 			setSyncStatus(true);
 		}
 	}
@@ -47,13 +47,13 @@ function SettingsPage() {
 
 		await fetch('/api/settings', {
 			method: 'PUT',
-			data: {
+			body: JSON.stringify({
 				chat_model: chatModel(),
 				embedding_model: embeddingModel(),
 				temperature: temperature(),
-				github_url: githubUrl(),
-				github_access_token: githubAccessToken(),
-			},
+				githubUrl: githubUrl(),
+				githubAccessToken: githubAccessToken(),
+			}),
 			headers: { 'Content-Type': 'application/json' },
 		});
 		setLoading(false);

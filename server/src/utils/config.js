@@ -30,6 +30,7 @@ async function getDb() {
 export async function loadConfig() {
     const db = await getDb();
     const rows = await db.all('SELECT key, value FROM config');
+
     if (!rows.length) {
         // Insert default config
         for (const [key, value] of Object.entries(DEFAULT_CONFIG)) {
@@ -37,7 +38,9 @@ export async function loadConfig() {
         }
         return { ...DEFAULT_CONFIG };
     }
+
     const config = {};
+
     for (const row of rows) {
         try {
             config[row.key] = JSON.parse(row.value);
@@ -45,15 +48,18 @@ export async function loadConfig() {
             config[row.key] = row.value;
         }
     }
+
     // Fill in any missing keys with defaults
     for (const [key, value] of Object.entries(DEFAULT_CONFIG)) {
         if (!(key in config)) config[key] = value;
     }
+
     return config;
 }
 
 export async function saveConfig(newConfig) {
     const db = await getDb();
+
     for (const [key, value] of Object.entries(newConfig)) {
         await db.run(
             'INSERT INTO config (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',

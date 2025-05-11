@@ -69,9 +69,11 @@ function getPendingStatus() {
 let syncFilesModel = null;
 
 async function syncWithGithub(localFiles) {
+    console.log('Syncing with GitHub...');
+
     // Lazy init syncFilesModel
     if (!syncFilesModel) {
-        syncFilesModel = FilesDataModel(DATA_FILES_SYNC_DIR);
+        syncFilesModel = new FilesDataModel(DATA_FILES_SYNC_DIR);
     }
 
     const syncDirectory = DATA_FILES_SYNC_DIR;
@@ -80,6 +82,7 @@ async function syncWithGithub(localFiles) {
 
     // Clone or pull repo
     let repo;
+
     if (!fs.existsSync(syncDirectory)) {
         await simpleGit().clone(
             `https://${encodeURIComponent(accessToken)}:x-oauth-basic@${repositoryUrl}`,
@@ -168,6 +171,9 @@ app.get('/api/files', async (req, res) => {
     // Check if the correct config is set to sync
     if (config.githubUrl && config.githubAccessToken) {
         const checksum = crypto.createHash('sha256').update(JSON.stringify(files)).digest('hex');
+
+        console.log('Checksum:', checksum);
+        console.log('Config Checksum:', config.filesChecksum);
 
         if ('filesChecksum' in config && config.filesChecksum !== checksum) {
             // Update checksum for use in next sync
