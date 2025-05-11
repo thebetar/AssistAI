@@ -6,7 +6,6 @@ services:
         container_name: assist-ai
         volumes:
             - ./server/data:/app/data
-            - ./server/src/config.json:/app/config.json
         ports:
             - '12345:12345'
         # environment:

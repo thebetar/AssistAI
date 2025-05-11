@@ -36,25 +36,35 @@ function NotesList({ notes = [], selectedNote, setSelectedNote, setAddMode, fetc
 		return preview;
 	}
 
+	function getFilteredNotes() {
+		return notes()
+			.filter(n => `${n.name.toLowerCase()} ${n.content.toLowerCase()}`.includes(filter().toLowerCase()))
+			.sort((a, b) => {
+				// Matching .name should be prioritized
+				const aName = a.name.toLowerCase().includes(filter().toLowerCase());
+				const bName = b.name.toLowerCase().includes(filter().toLowerCase());
+
+				if (aName && !bName) {
+					return -1;
+				}
+
+				if (!aName && bName) {
+					return 1;
+				}
+
+				return 0;
+			});
+	}
+
 	createEffect(() => {
 		function runFilter() {
 			if (params.tag) {
 				const tag = params.tag.toLowerCase();
-				setFilteredNotes(
-					notes()
-						.filter(n => n.tags.some(t => t.toLowerCase() === tag))
-						.filter(n =>
-							`${n.name.toLowerCase()} ${n.content.toLowerCase()}`.includes(filter().toLowerCase()),
-						),
-				);
+				setFilteredNotes(getFilteredNotes().filter(n => n.tags.some(t => t.toLowerCase() === tag)));
 				return;
 			}
 
-			setFilteredNotes(
-				notes().filter(n =>
-					`${n.name.toLowerCase()} ${n.content.toLowerCase()}`.includes(filter().toLowerCase()),
-				),
-			);
+			setFilteredNotes(getFilteredNotes());
 		}
 
 		if (notes().length > 0) {

@@ -16,39 +16,56 @@ class TagsDataModel {
                     id TEXT PRIMARY KEY,
                     file_id TEXT,
                     tag TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY(file_id) REFERENCES files(id) ON DELETE CASCADE
                 )
             `);
             return db;
+        }).catch((error) => {
+            console.error('[tags] Error opening tags database:', error);
         });
     }
 
     async getTags() {
         const db = await this.dbPromise;
-        const rows = await db.all(`
-            SELECT f.name as filename, t.tag
-            FROM tags t
-            JOIN files f ON t.file_id = f.id
-        `);
-        const tags = {};
-        for (const row of rows) {
-            if (!tags[row.filename]) tags[row.filename] = [];
-            tags[row.filename].push(row.tag);
+
+        try {
+            const rows = await db.all(`
+                SELECT f.name as filename, t.tag
+                FROM tags t
+                JOIN files f ON t.file_id = f.id
+            `);
+
+            const tags = {};
+            for (const row of rows) {
+                if (!tags[row.filename]) tags[row.filename] = [];
+                tags[row.filename].push(row.tag);
+            }
+
+            return tags;
+        } catch (e) {
+            console.error('[tags] Error fetching tags:', e);
+            return [];
         }
-        return tags;
     }
 
     async getTagsForFile(fileIdentifier) {
         const db = await this.dbPromise;
-        let fileRow;
-        if (fileIdentifier.length === 36 && fileIdentifier.match(/^[0-9a-f-]+$/i)) {
-            fileRow = await db.get('SELECT id FROM files WHERE id = ?', fileIdentifier);
-        } else {
-            fileRow = await db.get('SELECT id FROM files WHERE name = ?', fileIdentifier);
+
+        try {
+            const fileRow = await db.get('SELECT id FROM files WHERE id = ?', fileIdentifier);
+
+            if (!fileRow) {
+                return [];
+            }
+
+            const rows = await db.all('SELECT tag FROM tags WHERE file_id = ?', fileRow.id);
+
+            return rows.map(r => r.tag);
+        } catch (e) {
+            console.error('[tags] Error fetching tags for file:', e);
+            return [];
         }
-        if (!fileRow) return [];
-        const rows = await db.all('SELECT tag FROM tags WHERE file_id = ?', fileRow.id);
-        return rows.map(r => r.tag);
     }
 
     async add(fileIdentifier, tag) {
@@ -58,7 +75,7 @@ class TagsDataModel {
             const fileRow = await db.get('SELECT id FROM files WHERE id = ?', fileIdentifier);
 
             if (!fileRow) {
-                return;
+                return null;
             }
 
             await db.run('INSERT INTO tags (id, file_id, tag) VALUES (?, ?, ?)', uuidv4(), fileRow.id, tag);
@@ -69,7 +86,7 @@ class TagsDataModel {
                 tag: tag
             }
         } catch (error) {
-            console.error('Error adding tag:', error);
+            console.error('[tags] Error adding tag:', error);
             return null;
         }
 
@@ -92,7 +109,7 @@ class TagsDataModel {
                 id: fileRow.id
             }
         } catch (error) {
-            console.error('Error removing file:', error);
+            console.error('[tags] Error removing file:', error);
             return null;
         }
     }
@@ -114,7 +131,7 @@ class TagsDataModel {
                 tag: tag
             }
         } catch (error) {
-            console.error('Error removing tag:', error);
+            console.error('[tags] Error removing tag:', error);
             return null;
         }
     }

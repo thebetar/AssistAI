@@ -31,7 +31,8 @@ COPY server/package.json server/package-lock.json /app/
 RUN npm install
 
 # Copy the rest of the application code
-COPY server /app
+COPY server/src /app/src
+COPY server/data /app/data
 
 # Copy the built Solid.js app from the previous stage
 COPY --from=build /app/dist /app/client

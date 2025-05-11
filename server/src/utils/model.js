@@ -21,7 +21,7 @@ if (!fs.existsSync(DATA_DIR)) {
 }
 
 if (!fs.existsSync(DB_PATH)) {
-    fs.mkdirSync(DB_PATH, { recursive: true });
+    fs.writeFileSync(DB_PATH, '');
 }
 
 class CustomDocumentChatModel {

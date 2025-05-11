@@ -5,12 +5,13 @@ import multer from 'multer';
 import bodyParser from 'body-parser';
 import crypto from 'crypto';
 import simpleGit from 'simple-git';
+import archiver from 'archiver';
 
+import { BASE_PATH } from './utils/getPath.js';
 import CustomDocumentChatModel, { DATA_DIR, DB_PATH } from './utils/model.js';
+import { loadConfig, saveConfig } from './utils/config.js';
 import FilesDataModel from './models/files.js';
 import TagsDataModel from './models/tags.js';
-import { loadConfig, saveConfig } from './utils/config.js';
-import { BASE_PATH } from './utils/getPath.js';
 
 const app = express();
 const upload = multer();
@@ -22,14 +23,19 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/assets', express.static(path.join(BASE_PATH, 'client/assets/')));
 
 // --- Config ---
+const DATA_FILES_DIR = path.join(DATA_DIR, 'files');
 const DATA_FILES_SYNC_DIR = path.join(DATA_DIR, 'github');
+
+if (!fs.existsSync(DATA_FILES_DIR)) {
+    fs.mkdirSync(DATA_FILES_DIR, { recursive: true });
+}
 
 if (!fs.existsSync(DATA_FILES_SYNC_DIR)) {
     fs.mkdirSync(DATA_FILES_SYNC_DIR, { recursive: true });
 }
 
 const customDocumentChatModel = new CustomDocumentChatModel({
-    refresh: true
+    refresh: false
 });
 const tagsModel = new TagsDataModel(DB_PATH);
 const filesModel = new FilesDataModel(DB_PATH);
@@ -155,7 +161,7 @@ app.post('/api/question', async (req, res) => {
 
 app.get('/api/files', async (req, res) => {
     // Calculate checksum and sync logic
-    let files = await filesModel.getFiles();
+    let files = await filesModel.getFiles(true);
 
     // Check if the correct config is set to sync
     if (config.githubUrl && config.githubAccessToken) {
@@ -310,6 +316,42 @@ app.put('/api/settings', async (req, res) => {
     };
     await saveConfig(config);
     res.json(config);
+});
+
+app.get('/api/export', async (req, res) => {
+    const files = await filesModel.getFiles();
+
+    // Clear the files directory
+    const filesDir = path.join(DATA_DIR, 'files');
+    const oldFiles = fs.readdirSync(filesDir);
+
+    for (const file of oldFiles) {
+        fs.unlinkSync(path.join(filesDir, file));
+    }
+
+    // Write all files to the directory
+    for (const file of files) {
+        const filename = file.name;
+        const content = file.content;
+        fs.writeFileSync(path.join(filesDir, filename), content, 'utf-8');
+    }
+
+    // Create a zip file
+    const zipFilePath = path.join(DATA_DIR, 'files.zip');
+    const output = fs.createWriteStream(zipFilePath);
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    archive.pipe(output);
+    archive.directory(filesDir, false);
+    archive.finalize();
+
+    output.on('close', () => {
+        res.download(zipFilePath, `files_${new Date().toISOString().slice(0, 10)}.zip`, (err) => {
+            if (err) {
+                console.error(err);
+            }
+            fs.unlinkSync(zipFilePath); // Delete the zip file after download
+        });
+    });
 });
 
 // --- Catch-all for client-side routing ---

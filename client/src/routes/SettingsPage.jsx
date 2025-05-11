@@ -13,6 +13,7 @@ const SETTINGS_DEFAULTS = {
 
 function SettingsPage() {
 	const [loading, setLoading] = createSignal(false);
+	const [exportLoading, setExportLoading] = createSignal(false);
 	const [success, setSuccess] = createSignal(false);
 
 	const [chatModel, setChatModel] = createSignal('');
@@ -64,6 +65,32 @@ function SettingsPage() {
 		}, 2000);
 	}
 
+	async function exportNotes() {
+		setExportLoading(true);
+
+		const response = await fetch('/api/export', {
+			method: 'GET',
+			headers: { 'Content-Type': 'application/json' },
+		});
+
+		if (!response.ok) {
+			return;
+		}
+
+		const blob = await response.blob();
+		const url = window.URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.style.display = 'none';
+		a.href = url;
+		a.download = 'notes.zip';
+		document.body.appendChild(a);
+		a.click();
+		window.URL.revokeObjectURL(url);
+		document.body.removeChild(a);
+
+		setExportLoading(false);
+	}
+
 	onMount(fetchSettings);
 
 	return (
@@ -95,11 +122,26 @@ function SettingsPage() {
 			</div>
 
 			<button
-				class="mt-4 px-4 py-2 rounded bg-green-600 text-white font-semibold hover:bg-green-700 transition cursor-pointer"
+				class="block mt-4 px-4 py-2 rounded bg-green-600 text-white font-semibold hover:bg-green-700 transition cursor-pointer"
 				onClick={saveSettings}
 				disabled={loading()}
 			>
 				{loading() ? 'Saving...' : 'Save'}
+			</button>
+
+			<header class="text-lg font-semibold mt-8 mb-2">Export</header>
+
+			<div class="text-sm mb-2">
+				Export your notes to a zip with markdown files. This will include all the notes that are in the
+				database.
+			</div>
+
+			<button
+				class="px-4 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 transition cursor-pointer disabled:opacity-60"
+				disabled={exportLoading()}
+				onClick={exportNotes}
+			>
+				Export notes
 			</button>
 		</div>
 	);
